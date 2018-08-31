@@ -1529,6 +1529,36 @@ static void portforwarding_close(IOEXCarrier *w, int argc, char *argv[])
 
 static void help(IOEXCarrier *w, int argc, char *argv[]);
 
+//test
+
+void tt_02(const char *FileName,const char *Real_FileName){
+	output("[tt_02], 01=%s,02=%s\n",FileName,Real_FileName);
+}
+
+static void tsinit(IOEXCarrier *w, int argc, char *argv[])
+{
+	int rc;
+
+	IOEX_TSFile_ReceivedComplete_Callback(w,tt_02);
+    rc=IOEX_TSFile_Init(w);
+}
+static void tsfile(IOEXCarrier *w, int argc, char *argv[])
+{
+   int rc;
+
+
+	 if (argc != 4) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+	rc=IOEX_TSFile_Request(w,argv[1],argv[2],argv[3]);
+	output("test_01 result=%d,argv[1]=%s,argv[2]=%s,argv[3]=%d\n", rc,argv[1],argv[2],argv[3]);
+    
+}
+
+//test
+
 struct command {
     const char *cmd;
     void (*function)(IOEXCarrier *w, int argc, char *argv[]);
@@ -1575,6 +1605,8 @@ struct command {
     { "spfopen",    portforwarding_open,    "spfopen stream service tcp|udp host port" },
     { "spfclose",   portforwarding_close,   "spfclose stream pfid" },
     { "scleanup",   session_cleanup,        "scleanup" },
+	{ "tsinit",     tsinit,                 "tsinit" },
+    { "tsfile",     tsfile,         	    "tsfile userid file_name 0" },
     { "kill",       kill_carrier,           "kill" },
     { NULL }
 };
