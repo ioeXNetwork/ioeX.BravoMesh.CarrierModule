@@ -124,13 +124,13 @@ void *thread_SendFile(void *in_parm){
 
 	while(read_len<size){
 		temp_len=size-read_len;
-		if (temp_len>MAX_buffer_size){
-			fread(buffer,1,MAX_buffer_size,fp);				
-			read_len=read_len+MAX_buffer_size;
+		if (temp_len>Size_TSBuffer){
+			fread(buffer,1,Size_TSBuffer,fp);				
+			read_len=read_len+Size_TSBuffer;
 			rc = IOEX_stream_write(TSFile_config[TSFile_config_index].ws, 
 								  TSFile_config[TSFile_config_index].stream,
                                   buffer, 
-                                  MAX_buffer_size);
+                                  Size_TSBuffer);
 			if (rc<0){
 				vlogE("[ANT]thread_SendFile1 fail, rc=%d\n" ,rc);
 			}
@@ -154,7 +154,7 @@ void *thread_SendFile(void *in_parm){
 	rc = IOEX_stream_write(TSFile_config[TSFile_config_index].ws, 
 								  TSFile_config[TSFile_config_index].stream,
                                   buffer, 
-                                  MAX_buffer_size);
+                                  Size_TSBuffer);
 	if (rc<0){
 		vlogE("[ANT]thread_SendFile2 fail, rc=%d\n" ,rc);
 	}
@@ -267,8 +267,9 @@ static void SlaveTSFile_stream_on_data(IOEXSession *ws, int stream, const void *
 	int i;
 	int TSFile_config_index=-1;
 	int empty_index=-1;
-	char file_name[256];
+	char file_name[Size_FileName_Buffer];
 	char buffer[Size_TSBuffer];
+	char temp_file_name[Size_FileName_Buffer];
 	int rc;
 	struct timeval tv;
 	long FileName_long;
@@ -283,6 +284,10 @@ static void SlaveTSFile_stream_on_data(IOEXSession *ws, int stream, const void *
 			if (d2!=NULL){
 				memset(file_name, 0, sizeof(file_name));
 				strncpy(file_name,d1+1,d2-d1-1);
+				if (strlen(file_name)>Size_FileName_Buffer){
+					vlogE("SlaveTSFile_stream_on_data, file name too long,=%d",strlen(file_name));
+					return;
+				}
 				
 				TSFile_config_index=Get_TSFileConfig_Index(stream);
 				//vlogD("[ANT]SlaveTSFile_stream_on_data,stream=%d,TSFile_config_index=%d",stream,TSFile_config_index);
@@ -291,7 +296,11 @@ static void SlaveTSFile_stream_on_data(IOEXSession *ws, int stream, const void *
 					strcpy(TSFile_config[TSFile_config_index].RealFileName,file_name);
 					gettimeofday(&tv,NULL);
 					FileName_long=tv.tv_sec*1000+tv.tv_usec/1000;
-					sprintf(TSFile_config[TSFile_config_index].filename,"%ld.Xtmp",FileName_long);
+					//sprintf(TSFile_config[TSFile_config_index].filename,"%ld.Xtmp",FileName_long);
+					sprintf(temp_file_name,"%ld.Xtmp",FileName_long);
+					strcat(TSFile_config[TSFile_config_index].filename,Path_SaveReceiveFile);
+					strcat(TSFile_config[TSFile_config_index].filename,temp_file_name);
+
 					vlogD("[DDXX]FileNam=%s",TSFile_config[TSFile_config_index].filename);
 					TSFile_config[TSFile_config_index].start_Position=0;
 					TSFile_config[TSFile_config_index].state=IOEX_TSFileState_ReceiveFileName;
@@ -311,7 +320,7 @@ static void SlaveTSFile_stream_on_data(IOEXSession *ws, int stream, const void *
 		vlogD("[ANT]transfile_on_data, res=%d,len=%d\n",res,len);
 		if (TSFile_config_index!=-1){
 			if ( (res>0) && (len>4) ){
-				char end_buf[MAX_buffer_size];
+				char end_buf[Size_TSBuffer];
 
 				strncpy(end_buf,data,len-4);
 				FILE *fptr;        
@@ -442,9 +451,9 @@ static void TSFile_request_callback(IOEXCarrier *w, const char *from,
 	}  
 }
 
-int IOEX_TSFile_Init(IOEXCarrier *carrier){
+int IOEX_TSFile_Init(IOEXCarrier *carrier, const char *Path_Savefile){
 
-	int i;
+	int i,size;
 	for (i=0;i<Max_TSFile_config;i++)
 	{
 		TSFile_config[i].ws=0;
@@ -457,7 +466,17 @@ int IOEX_TSFile_Init(IOEXCarrier *carrier){
 		strcpy(TSFile_config[i].address,"");
 	}	
 
+	size=strlen(Path_Savefile);	
+	vlogE("IOEX_session_start size=%d\n",size);
+	if (size>Size_Path_SaveFile_Buffer){
+		return IOEX_TSFile_ErrorCode_OverBuffer;
+	}
+	strcpy(Path_SaveReceiveFile,Path_Savefile);
+
+	vlogE("IOEX_session_start size=%d,string=%s\n",size,Path_SaveReceiveFile);
+	
 	IOEX_session_init(carrier, TSFile_request_callback, NULL);
+
 	return true;
 }
 

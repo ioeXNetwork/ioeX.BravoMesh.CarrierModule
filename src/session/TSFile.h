@@ -11,6 +11,8 @@
 
 #define Size_TSBuffer 2*1024
 
+#define Size_FileName_Buffer 512
+#define Size_Path_SaveFile_Buffer 512
 /**
  *	Tranfer file config
  *	Record all info and config about transfer file
@@ -18,8 +20,8 @@
  */
 struct struct_TSFile_config{
 	IOEXSession *ws;
-    char filename[256];
-	char RealFileName[256];
+    char filename[Size_FileName_Buffer];
+	char RealFileName[Size_Path_SaveFile_Buffer+Size_FileName_Buffer];
     size_t file_size;
     size_t start_Position;
 	int stream;
@@ -30,6 +32,8 @@ struct struct_TSFile_config{
     int owner;
 	int count;	
 };
+
+char Path_SaveReceiveFile[Size_Path_SaveFile_Buffer];
 
 struct struct_TSFile_config TSFile_config[Max_TSFile_config];
 
@@ -44,6 +48,7 @@ typedef enum IOEX_TSFile_ErrorCode {
 	IOEX_TSFile_ErrorCode_NoFile=-2,
 	IOEX_TSFile_ErrorCode_GetFriendInfoFail=-3,
 	IOEX_TSFile_ErrorCode_FrinedNotOnLine=-4,
+	IOEX_TSFile_ErrorCode_OverBuffer=-5,
 	
 } IOEX_ErrorCode;
 
@@ -66,23 +71,21 @@ typedef enum IOEX_TSFileState {
  *	
  *
  */
-static const char *header_start_file = "$1A#";
-static const char *header_replyok_file ="$2B#";
-static const char *header_end_file = "$9Z#";
+//static const char *header_start_file = "$1A#";
+//static const char *header_replyok_file ="$2B#";
+//static const char *header_end_file = "$9Z#";
+//static const char *div_char=",";
+#define header_start_file "$1A#"
+#define header_replyok_file "$2B#"
+#define header_end_file "$9Z#"
+#define div_char ","
 
-static const char *div_char=",";
-static int MAX_buffer_size = 2048;
+//static int MAX_buffer_size = 2048;
 
-//void (*ReceivedComplete)(const char *FileName,const char *Real_FileName);
 void (*ReceivedComplete)(const char *FileName,const char *Real_FileName);
-/*
-typedef struct TSFile_Callbacks {
 
-	void (*ReceivedComplete)(const char *FileName,const char *Real_FileName);
-}TSFile_Callbacks;
-*/
 CARRIER_API
-int IOEX_TSFile_Init(IOEXCarrier *carrier);
+int IOEX_TSFile_Init(IOEXCarrier *carrier, const char *Path_Savefile);
 
 CARRIER_API
 int IOEX_TSFile_Request(IOEXCarrier *carrier, const char *address,
