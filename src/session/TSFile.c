@@ -329,9 +329,10 @@ static void SlaveTSFile_stream_on_data(IOEXSession *ws, int stream, const void *
 				fclose(fptr);
 			}
 		}
-		//sleep(1);
+		//sleep(1);		
+		callback_func_ReceivedComplete(TSFile_config[TSFile_config_index].filename,TSFile_config[TSFile_config_index].RealFileName);
+		usleep(200);   
 		IOEX_TSFile_remove_stream(TSFile_config_index);  
-		ReceivedComplete(TSFile_config[TSFile_config_index].filename,TSFile_config[TSFile_config_index].RealFileName);     
 	}else{
 		TSFile_config_index=Get_TSFileConfig_Index(stream);
 		char end_data[4];
@@ -349,9 +350,11 @@ static void SlaveTSFile_stream_on_data(IOEXSession *ws, int stream, const void *
 					fwrite(data,1,len-4,fptr);
 					fclose(fptr);
 					//remove stream
-					//sleep(1);
+					//sleep(1);					
+					callback_func_ReceivedComplete(TSFile_config[TSFile_config_index].filename,TSFile_config
+												   [TSFile_config_index].RealFileName);
+					usleep(200); 
 					IOEX_TSFile_remove_stream(TSFile_config_index);
-					ReceivedComplete(TSFile_config[TSFile_config_index].filename,TSFile_config[TSFile_config_index].RealFileName);
 				}else{
 					FILE *fptr;        
 					fptr=fopen(TSFile_config[TSFile_config_index].filename,"a");
@@ -587,9 +590,9 @@ int IOEX_TSFile_Request(IOEXCarrier *carrier, const char *address,
 	return IOEX_TSFile_ErrorCode_OK;
 
 }
-int IOEX_TSFile_ReceivedComplete_Callback(IOEXCarrier *carrier, void *callback){
+int IOEX_TSFile_ReceivedComplete_Callback(IOEXCarrier *carrier, ReceivedComplete *callback){
 
-	ReceivedComplete=callback;
+	callback_func_ReceivedComplete=callback;
 	return true;
 }
 

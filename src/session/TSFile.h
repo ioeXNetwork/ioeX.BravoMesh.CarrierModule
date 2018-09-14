@@ -82,7 +82,9 @@ typedef enum IOEX_TSFileState {
 
 //static int MAX_buffer_size = 2048;
 
-void (*ReceivedComplete)(const char *FileName,const char *Real_FileName);
+typedef void ReceivedComplete(const char *FileName,const char *Real_FileName);
+
+ReceivedComplete *callback_func_ReceivedComplete;
 
 CARRIER_API
 int IOEX_TSFile_Init(IOEXCarrier *carrier, const char *Path_Savefile);
@@ -92,5 +94,5 @@ int IOEX_TSFile_Request(IOEXCarrier *carrier, const char *address,
 						const char* filename, int start_byte);
 
 CARRIER_API
-int IOEX_TSFile_ReceivedComplete_Callback(IOEXCarrier *carrier, void *callback);
+int IOEX_TSFile_ReceivedComplete_Callback(IOEXCarrier *carrier, ReceivedComplete *callback);
 #endif /* __TSFILE_H__ */
