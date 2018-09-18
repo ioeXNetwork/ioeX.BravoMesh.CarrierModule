@@ -48,7 +48,7 @@
 
 #include <IOEX_carrier.h>
 #include <IOEX_session.h>
-
+#include <TSFile.h>
 #include "config.h"
 
 #define NUMBER_OF_HISTORY       256
@@ -1540,7 +1540,8 @@ static void tsinit(IOEXCarrier *w, int argc, char *argv[])
 	int rc;
 
 	IOEX_TSFile_ReceivedComplete_Callback(w,tt_02);
-    rc=IOEX_TSFile_Init(w, NULL);
+    rc=IOEX_TSFile_Init(w,"/home/fihtdc/SDK_test/0912/ioeX.BravoMesh.CarrierModule/apps/", NULL`);
+	//rc=IOEX_TSFile_Init(w,"");
 }
 static void tsfile(IOEXCarrier *w, int argc, char *argv[])
 {
@@ -1551,7 +1552,8 @@ static void tsfile(IOEXCarrier *w, int argc, char *argv[])
         output("Invalid command syntax.\n");
         return;
     }
-	rc=IOEX_TSFile_Request(w,argv[1],argv[2],argv[3], NULL);
+
+	rc=IOEX_TSFile_Request(w,argv[1],argv[2],atoi(argv[3]), NULL);
 	output("test_01 result=%d,argv[1]=%s,argv[2]=%s,argv[3]=%d\n", rc,argv[1],argv[2],argv[3]);
     
 }
