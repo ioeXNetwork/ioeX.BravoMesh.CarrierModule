@@ -1540,7 +1540,7 @@ static void tsinit(IOEXCarrier *w, int argc, char *argv[])
 	int rc;
 
 	IOEX_TSFile_ReceivedComplete_Callback(w,tt_02);
-    rc=IOEX_TSFile_Init(w,"/home/fihtdc/SDK_test/0912/ioeX.BravoMesh.CarrierModule/apps/", NULL`);
+    rc=IOEX_TSFile_Init(w,"/home/fihtdc/SDK_test/0912/ioeX.BravoMesh.CarrierModule/apps/", NULL);
 	//rc=IOEX_TSFile_Init(w,"");
 }
 static void tsfile(IOEXCarrier *w, int argc, char *argv[])
