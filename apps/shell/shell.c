@@ -1540,7 +1540,7 @@ static void tsinit(IOEXCarrier *w, int argc, char *argv[])
 	int rc;
 
 	IOEX_TSFile_ReceivedComplete_Callback(w,tt_02);
-    rc=IOEX_TSFile_Init(w);
+    rc=IOEX_TSFile_Init(w, NULL);
 }
 static void tsfile(IOEXCarrier *w, int argc, char *argv[])
 {
@@ -1551,8 +1551,7 @@ static void tsfile(IOEXCarrier *w, int argc, char *argv[])
         output("Invalid command syntax.\n");
         return;
     }
-
-	rc=IOEX_TSFile_Request(w,argv[1],argv[2],argv[3]);
+	rc=IOEX_TSFile_Request(w,argv[1],argv[2],argv[3], NULL);
 	output("test_01 result=%d,argv[1]=%s,argv[2]=%s,argv[3]=%d\n", rc,argv[1],argv[2],argv[3]);
     
 }

@@ -82,11 +82,11 @@ typedef struct TSFile_Callbacks {
 }TSFile_Callbacks;
 */
 CARRIER_API
-int IOEX_TSFile_Init(IOEXCarrier *carrier);
+int IOEX_TSFile_Init(IOEXCarrier *carrier, void *context);
 
 CARRIER_API
 int IOEX_TSFile_Request(IOEXCarrier *carrier, const char *address,
-						const char* filename, int start_byte);
+						const char* filename, int start_byte, void *context);
 
 CARRIER_API
 int IOEX_TSFile_ReceivedComplete_Callback(IOEXCarrier *carrier, void *callback);

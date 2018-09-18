@@ -380,7 +380,7 @@ static void TSFile_request_callback(IOEXCarrier *w, const char *from,
     options = IOEX_STREAM_RELIABLE;
 
 	steam_id = IOEX_session_add_stream(TS_session, IOEXStreamType_text,
-                                options, &callbacks, NULL);
+                                options, &callbacks, context);
     state_count=0;
 	while (state_count<=Count_WaitStateChange){
     	IOEX_stream_get_state(TS_session,steam_id,&StreamState);
@@ -442,7 +442,7 @@ static void TSFile_request_callback(IOEXCarrier *w, const char *from,
 	}  
 }
 
-int IOEX_TSFile_Init(IOEXCarrier *carrier){
+int IOEX_TSFile_Init(IOEXCarrier *carrier, void *context){
 
 	int i;
 	for (i=0;i<Max_TSFile_config;i++)
@@ -457,13 +457,13 @@ int IOEX_TSFile_Init(IOEXCarrier *carrier){
 		strcpy(TSFile_config[i].address,"");
 	}	
 
-	IOEX_session_init(carrier, TSFile_request_callback, NULL);
+	IOEX_session_init(carrier, TSFile_request_callback, context);
 	return true;
 }
 
 
 int IOEX_TSFile_Request(IOEXCarrier *carrier, const char *address,
-						const char* filename, int start_byte){
+						const char* filename, int start_byte, void *context){
 
 	int steam_id;
 	IOEXSession *TS_session;
@@ -510,7 +510,7 @@ int IOEX_TSFile_Request(IOEXCarrier *carrier, const char *address,
     options = IOEX_STREAM_RELIABLE;
 
     steam_id = IOEX_session_add_stream(TS_session, IOEXStreamType_text,
-                                options, &callbacks, NULL);
+                                options, &callbacks, context);
     state_count=0;
 	while (state_count<=Count_WaitStateChange){
     	IOEX_stream_get_state(TS_session,steam_id,&StreamState);
@@ -560,7 +560,7 @@ int IOEX_TSFile_Request(IOEXCarrier *carrier, const char *address,
 	//Store data
 
 	IOEX_session_request(TS_session,
-                             session_request_complete_callback, NULL);
+                             session_request_complete_callback, context);
     IOEX_stream_get_state(TS_session,steam_id,&StreamState);
     vlogD("[AA]StreamState=%d\n", StreamState);
 	
