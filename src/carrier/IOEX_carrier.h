@@ -604,6 +604,24 @@ typedef struct IOEXCallbacks {
     void (*friend_invite)(IOEXCarrier *carrier, const char *from,
                           const void *data, size_t len, void *context);
 
+    /**
+     * \~English
+     * An application-defined function that process the file send request.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      friend      [in] The user id from who send the file send request.
+     * @param
+     *      filename    [in] The name of file which is requested to be sent from friend.
+     * @param
+     *      filesize    [in] The size of the file in bytes.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*file_request)(IOEXCarrier *carrier, const char *friendid,
+                              const char *filename, uint64_t filesize, void *context);
+
 } IOEXCallbacks;
 
 /**
@@ -1210,6 +1228,33 @@ CARRIER_API
 int IOEX_reply_friend_invite(IOEXCarrier *carrier, const char *to,
                             int status, const char *reason,
                             const void *data, size_t len);
+
+/******************************************************************************
+ * File transmitting
+ *****************************************************************************/
+
+/**
+ * \~English
+ * An application-defined function that process the file send request.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      friend      [in] The user id from who send the file send request.
+ * @param
+ *      filename    [in] The name of file which is requested to be sent from friend.
+ * @param
+ *      filesize    [in] The size of the file in bytes.
+ * @param
+ *      context     [in] The application defined context data.
+ * @return
+ *      0 if the request successfully send to the friend.
+ *      Otherwise, return -1, and a specific error code can be
+ *      retrieved by calling IOEX_get_error().
+ */
+CARRIER_API
+int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *filename);
+
 /******************************************************************************
  * Error handling
  *****************************************************************************/

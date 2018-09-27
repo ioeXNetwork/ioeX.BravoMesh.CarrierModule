@@ -1558,6 +1558,23 @@ static void tsfile(IOEXCarrier *w, int argc, char *argv[])
     
 }
 
+static void file_send_request(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 3){
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = IOEX_send_file_request(w, argv[1], argv[2]);
+    if(rc < 0){
+        output("Invalid request.\n");
+    }
+    else{
+        output("File request sent.\n");
+    }
+}
+
 //test
 
 struct command {
@@ -1608,6 +1625,7 @@ struct command {
     { "scleanup",   session_cleanup,        "scleanup" },
 	{ "tsinit",     tsinit,                 "tsinit" },
     { "tsfile",     tsfile,         	    "tsfile userid file_name 0" },
+    { "filesend",   file_send_request, 	    "filesend userid filename" },
     { "kill",       kill_carrier,           "kill" },
     { NULL }
 };
@@ -1868,6 +1886,17 @@ static void invite_request_callback(IOEXCarrier *w, const char *from,
     output("  ireply %s refuse [reason]\n", from);
 }
 
+static void file_request_callback(IOEXCarrier *w, const char *friendid, const char *filename, 
+                                  const uint64_t filesize, void *context)
+{
+    output("Send file request from friend[%s]\n", friendid);
+    output("File name [%s] with size %u\n", filename, filesize);
+    output("Reply use following commands:\n");
+    // TODO: update with correct commands
+    output("  fileaccept\n");
+    output("  filereject\n");
+}
+
 static void usage(void)
 {
     printf("IOEX shell, an interactive console client application.\n");
@@ -2003,6 +2032,8 @@ int main(int argc, char *argv[])
     callbacks.friend_removed = friend_removed_callback;
     callbacks.friend_message = message_callback;
     callbacks.friend_invite = invite_request_callback;
+
+    callbacks.file_request = file_request_callback;
 
     w = IOEX_new(&opts, &callbacks, NULL);
     deref(cfg);
