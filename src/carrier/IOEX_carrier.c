@@ -1664,9 +1664,9 @@ void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
 }
 
 static 
-void notify_file_request_cb(uint32_t friend_number, const uint8_t *filename, const uint64_t filesize, void *context)
+void notify_file_request_cb(const uint32_t friend_number, const uint8_t file_number, 
+                            const uint8_t *filename, const uint64_t filesize, void *context)
 {
-    vlogI("filename:%s", filename);
     IOEXCarrier *w = (IOEXCarrier *)context;
     FriendInfo *fi;
     char tmpid[IOEX_MAX_ID_LEN + 1];
@@ -1676,13 +1676,13 @@ void notify_file_request_cb(uint32_t friend_number, const uint8_t *filename, con
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
-        vlogE("Carrier: Unknown friend number %lu, file request of %s dropped.", friend_number, filename);;
+        vlogE("Carrier: Unknown friend number %lu, file request of %s, index %u dropped.", friend_number, filename, file_number);
         return;
     }
     strcpy(tmpid, fi->info.user_info.userid);
 
     if(w->callbacks.file_request){
-        w->callbacks.file_request(w, tmpid, filename, filesize, w->context);
+        w->callbacks.file_request(w, tmpid, file_number, filename, filesize, w->context);
     }
 }
 

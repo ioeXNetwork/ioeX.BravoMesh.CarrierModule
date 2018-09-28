@@ -402,12 +402,16 @@ void notify_friend_message_cb(Tox *tox, uint32_t friend_number,
 }
 
 static 
-void notify_file_request_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t kind, uint64_t file_size,
+void notify_file_request_cb(Tox *tox, uint32_t friend_number, uint32_t real_filenumber, uint32_t kind, uint64_t file_size,
                               const uint8_t *filename, size_t filename_length, void *context)
 {
+    // TODO: Raymond: frankly, tox pass the "real_filenumber" which is
+    // filenumber + 1 then << 16
+    // we will revert it back to normal filenumber
+    uint8_t file_number = (uint8_t)((real_filenumber >> 16) - 1);
+
     DHTCallbacks *cbs = (DHTCallbacks *)context;
-    // TODO: any extra checks here?
-    cbs->notify_file_request(friend_number, filename, file_size, cbs->context);
+    cbs->notify_file_request(friend_number, file_number, filename, file_size, cbs->context);
 }
 
 
