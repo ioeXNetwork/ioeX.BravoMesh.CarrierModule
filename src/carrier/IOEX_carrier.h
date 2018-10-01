@@ -621,8 +621,45 @@ typedef struct IOEXCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*file_request)(IOEXCarrier *carrier, const char *friendid, const uint8_t fileindex,
-                              const char *filename, uint64_t filesize, void *context);
+    void (*file_request)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex,
+                         const char *filename, uint64_t filesize, void *context);
+
+    /**
+     * \~English
+     * An application-defined function that process the control message from a friend.
+     * This control message indicates that the friend has accepted our previous send file request.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      friendid    [in] The user id from who accepted our send file request.
+     * @param
+     *      fileindex   [in] The index of the file that has been accepted.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*file_accepted)(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, 
+                          void *context);
+
+    /**
+     * \~English
+     * An application-defined function that process the file chunk request.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      friendid    [in] The user id from who asked us to send a chunk of file.
+     * @param
+     *      fileindex   [in] The index of the file which is requested.
+     * @param
+     *      position    [in] The start position of the file in bytes that should be sent.
+     * @param
+     *      length      [in] The size of the file that should be sent in bytes.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*file_chunk_request)(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, 
+                               const uint64_t position, const size_t length, void *context);
 
 } IOEXCallbacks;
 
@@ -1256,6 +1293,9 @@ int IOEX_reply_friend_invite(IOEXCarrier *carrier, const char *to,
  */
 CARRIER_API
 int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *filename);
+
+CARRIER_API
+int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *fileindex);
 
 /******************************************************************************
  * Error handling

@@ -49,9 +49,15 @@ struct DHTCallbacks {
     void (*notify_friend_message)(uint32_t friend_number, const uint8_t *message,
                                   size_t length, void *context);
 
-    void (*notify_file_request)(uint32_t friend_number, const uint8_t file_number, 
-                                const uint8_t *filename, const uint64_t filesize, 
+    void (*notify_file_request)(uint32_t friend_number, uint32_t file_number, 
+                                const uint8_t *filename, uint64_t filesize, 
                                 void *context);
+
+    void (*notify_file_accepted)(uint32_t friend_number, uint32_t file_number, 
+                                 void *context);
+
+    void (*notify_file_chunk_request)(uint32_t friend_number, uint32_t file_number, uint64_t position,
+                                      size_t length, void *context);
 };
 
 typedef struct DHTCallbacks DHTCallbacks;

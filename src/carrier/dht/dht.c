@@ -405,15 +405,27 @@ static
 void notify_file_request_cb(Tox *tox, uint32_t friend_number, uint32_t real_filenumber, uint32_t kind, uint64_t file_size,
                               const uint8_t *filename, size_t filename_length, void *context)
 {
-    // TODO: Raymond: frankly, tox pass the "real_filenumber" which is
-    // filenumber + 1 then << 16
-    // we will revert it back to normal filenumber
-    uint8_t file_number = (uint8_t)((real_filenumber >> 16) - 1);
-
     DHTCallbacks *cbs = (DHTCallbacks *)context;
-    cbs->notify_file_request(friend_number, file_number, filename, file_size, cbs->context);
+    cbs->notify_file_request(friend_number, real_filenumber, filename, file_size, cbs->context);
 }
 
+static 
+void notify_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+                            void *context)
+{
+    DHTCallbacks *cbs = (DHTCallbacks *)context;
+    if(control == TOX_FILE_CONTROL_RESUME){
+        cbs->notify_file_accepted(friend_number, file_number, cbs->context);
+    }
+}
+
+static 
+void notify_file_chunk_request_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
+                               size_t length, void *context)
+{
+    DHTCallbacks *cbs = (DHTCallbacks *)context;
+    cbs->notify_file_chunk_request(friend_number, file_number, position, length, cbs->context);
+}
 
 static
 void log_cb(Tox *tox, TOX_LOG_LEVEL level, const char *file, uint32_t line,
@@ -487,6 +499,8 @@ int dht_new(const uint8_t *savedata, size_t datalen, bool udp_enabled, DHT *dht)
     tox_callback_friend_message(tox, notify_friend_message_cb);
 
     tox_callback_file_recv(tox, notify_file_request_cb);
+    tox_callback_file_recv_control(tox, notify_file_control_cb);
+    tox_callback_file_chunk_request(tox, notify_file_chunk_request_cb);
 
     dht->tox = tox;
 
@@ -895,12 +909,20 @@ int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *filename
     fseek(tempfile, 0, SEEK_SET);
     uint32_t filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename, 
                                      strlen(filename), 0);
-    // TODO: implement some filenum table in carrier to track file trasport state
-    // e.g. in c-toxcore-0.1.10/testing/tox_sync.c: 
-    // file_senders[numfilesenders].file = tempfile;
-    // file_senders[numfilesenders].friendnum = friendnum;
-    // file_senders[numfilesenders].filenumber = filenum;
-    // ++numfilesenders;
-
     return filenum;
+}
+
+int dht_file_send_accept(DHT *dht, uint32_t friend_number, const uint32_t file_number)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_CONTROL error;
+
+    rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error);
+    if(rc){
+        vlogI("Accepted file.");
+        return 0;
+    }
+    vlogE("Send file control error: %i", error);
+    return -1;
 }
