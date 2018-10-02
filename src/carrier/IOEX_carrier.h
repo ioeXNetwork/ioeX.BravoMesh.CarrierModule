@@ -391,6 +391,14 @@ typedef struct IOEXFriendInfo {
     IOEXPresenceStatus presence;
 } IOEXFriendInfo;
 
+typedef struct IOEXFileInfo {
+    // TODO: use variable length string
+    char file_name[4096];
+    char file_path[4096];
+    uint32_t friend_number;
+    uint32_t file_index;
+} IOEXFileInfo;
+
 /**
  * \~English
  * Carrier callbacks, include all global callbacks for Carrier.
@@ -638,7 +646,7 @@ typedef struct IOEXCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*file_accepted)(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, 
+    void (*file_accepted)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
                           void *context);
 
     /**
@@ -652,14 +660,17 @@ typedef struct IOEXCallbacks {
      * @param
      *      fileindex   [in] The index of the file which is requested.
      * @param
+     *      filename    [in] The name of the file which is requested.
+     * @param
      *      position    [in] The start position of the file in bytes that should be sent.
      * @param
      *      length      [in] The size of the file that should be sent in bytes.
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*file_chunk_request)(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, 
-                               const uint64_t position, const size_t length, void *context);
+    void (*file_chunk_request)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
+                               const char *filename, const uint64_t position, const size_t length, 
+                               void *context);
 
 } IOEXCallbacks;
 
@@ -996,6 +1007,9 @@ bool IOEX_is_ready(IOEXCarrier *carrier);
  */
 typedef bool IOEXFriendsIterateCallback(const IOEXFriendInfo *info,
                                        void *context);
+
+typedef bool IOEXFilesIterateCallback(int direction, const IOEXFileInfo *info,
+                                       void *context);
 /**
  * \~English
  * Get friends list. For each friend will call the application defined
@@ -1279,13 +1293,9 @@ int IOEX_reply_friend_invite(IOEXCarrier *carrier, const char *to,
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
  * @param
- *      friend      [in] The user id from who send the file send request.
+ *      friendid    [in] The user id from who send the file send request.
  * @param
  *      filename    [in] The name of file which is requested to be sent from friend.
- * @param
- *      filesize    [in] The size of the file in bytes.
- * @param
- *      context     [in] The application defined context data.
  * @return
  *      0 if the request successfully send to the friend.
  *      Otherwise, return -1, and a specific error code can be
@@ -1294,8 +1304,41 @@ int IOEX_reply_friend_invite(IOEXCarrier *carrier, const char *to,
 CARRIER_API
 int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *filename);
 
+/**
+ * \~English
+ * An application-defined function that accepts a file send request.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      friendid    [in] The user id from who send the file send request.
+ * @param
+ *      fileindex   [in] The index of the file that will be accepted.
+ * @return
+ *      0 if the request successfully send to the friend.
+ *      Otherwise, return -1, and a specific error code can be
+ *      retrieved by calling IOEX_get_error().
+ */
 CARRIER_API
-int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *fileindex);
+int IOEX_send_file_accept(IOEXCarrier *carrier, const char *friendid, const char *fileindex);
+
+/**
+ * \~English
+ * An application-defined function that process the file send request.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      callback    [in] The iteration callback that will be called.
+ * @param
+ *      context     [in] The application defined context data.
+ * @return
+ *      0 if the request successfully send to the friend.
+ *      Otherwise, return -1, and a specific error code can be
+ *      retrieved by calling IOEX_get_error().
+ */
+CARRIER_API
+int IOEX_get_files(IOEXCarrier *carrier, IOEXFilesIterateCallback *callback, void *context);
 
 /******************************************************************************
  * Error handling

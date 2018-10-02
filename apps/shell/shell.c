@@ -1558,6 +1558,40 @@ static void tsfile(IOEXCarrier *w, int argc, char *argv[])
     
 }
 
+static bool get_files_callback(int direction, const IOEXFileInfo *fi, void *context)
+{
+    static int count = 0;
+    if(fi != NULL){
+        if (direction == 0) {
+            count++;
+            output("Send: [%u]%s to friend: %u\n", fi->file_index, fi->file_name, fi->friend_number);
+        }
+        else{
+            count++;
+            output("Receive: [%u]%s to friend: %u\n", fi->file_index, fi->file_name, fi->friend_number);
+        }
+    }
+    else{
+        output("Total %d file(s) in queue.\n", count);
+        count = 0;
+    }
+
+    return true;
+}
+
+static void list_files(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 1){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_get_files(w, get_files_callback, NULL);
+    if(rc < 0){
+        output("Cannot get files.\n");
+    }
+}
+
 static void file_send_request(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
@@ -1643,6 +1677,7 @@ struct command {
     { "tsfile",     tsfile,         	    "tsfile userid file_name 0" },
     { "filesend",   file_send_request, 	    "filesend userid filename" },
     { "fileaccept", file_send_accept, 	    "fileaccept userid fileindex" },
+    { "files",      list_files,      	    "files" },
     { "kill",       kill_carrier,           "kill" },
     { NULL }
 };
@@ -1918,10 +1953,10 @@ static void file_accepted_callback(IOEXCarrier *w, const char *friendid, const u
     output("Friend[%s] has accepted file request [index:%u]\n", friendid, fileindex);
 }
 
-static void file_chunk_request_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, 
+static void file_chunk_request_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
                                         const uint64_t position, const size_t length, void *context)
 {
-    output("Friend[%s] sent a file chunk request [index:%u]\n", friendid, fileindex);
+    output("Friend[%s] sent a file chunk request for file[%s] index:%u]\n", friendid, filename, fileindex);
     output("From position: %u and length: %u\n", position, length);
 }
 

@@ -66,6 +66,11 @@ typedef struct FriendEvent {
     IOEXFriendInfo fi;
 } FriendEvent;
 
+typedef struct FileTracker {
+    ListEntry le;
+    IOEXFileInfo fi;
+} FileTracker;
+
 struct IOEXCarrier {
     void *session;  // reserved for session.
 
@@ -89,6 +94,9 @@ struct IOEXCarrier {
 
     List *friend_events; // for friend_added/removed.
     Hashtable *friends;
+
+    List *file_senders;
+    List *file_receivers;
 
     Hashtable *tcallbacks;
     Hashtable *thistory;

@@ -978,6 +978,12 @@ static void IOEX_destroy(void *argv)
     if (w->friend_events)
         deref(w->friend_events);
 
+    if (w->file_senders)
+        deref(w->file_senders);
+
+    if (w->file_receivers)
+        deref(w->file_receivers);
+
     dht_kill(&w->dht);
 }
 
@@ -1088,6 +1094,22 @@ IOEXCarrier *IOEX_new(const IOEXOptions *opts,
 
     w->friend_events = list_create(1, NULL);
     if (!w->friend_events) {
+        free_persistence_data(&data);
+        deref(w);
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY));
+        return NULL;
+    }
+
+    w->file_senders = list_create(1, NULL);
+    if (!w->file_senders) {
+        free_persistence_data(&data);
+        deref(w);
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY));
+        return NULL;
+    }
+
+    w->file_receivers = list_create(1, NULL);
+    if (!w->file_receivers) {
         free_persistence_data(&data);
         deref(w);
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY));
@@ -1715,6 +1737,7 @@ void nofity_file_chunk_request_cb(const uint32_t friend_number, const uint32_t f
     IOEXCarrier *w = (IOEXCarrier *)context;
     FriendInfo *fi;
     char tmpid[IOEX_MAX_ID_LEN + 1];
+    int rc;
 
     assert(friend_number != UINT32_MAX);
 
@@ -1725,8 +1748,50 @@ void nofity_file_chunk_request_cb(const uint32_t friend_number, const uint32_t f
     }
     strcpy(tmpid, fi->info.user_info.userid);
 
+    // TODO: use file sender structure to set the event, and do the transimitting in main loop
+    //       don't just send the chunk in this callback
+    ListIterator it;
+    FILE *fp = NULL;
+    char filename[4096];
+    list_iterate(w->file_senders, &it);
+    while(list_iterator_has_next(&it)) {
+        FileTracker *sender;
+        int rc;
+
+        rc = list_iterator_next(&it, (void **)&sender);
+        if (rc == 0)
+            break;
+
+        IOEXFileInfo *info = &sender->fi;
+
+        if(info->friend_number == friend_number && info->file_index == file_number){
+            if(length == 0){
+                deref(list_remove_entry(w->file_senders, &sender->le));
+                deref(sender);
+                break;
+            }
+            else {
+                fp = fopen(info->file_name, "rb");
+                strncpy(filename, info->file_name, sizeof(filename));
+                deref(sender);
+                break;
+            }
+        }
+
+        deref(sender);
+    }
+
+    if(fp != NULL && length > 0){
+        fseek(fp, position, SEEK_SET);
+        char data[4096];
+        int len = fread(data, 1, length, fp);
+        rc = dht_file_send_chunk(&w->dht, friend_number, file_number, position, data, len);
+        fclose(fp);
+    }
+
+    // TODO: make it better for progress
     if(w->callbacks.file_chunk_request){
-        w->callbacks.file_chunk_request(w, tmpid, file_number, position, length, w->context);
+        w->callbacks.file_chunk_request(w, tmpid, file_number, filename, position, length, w->context);
     }
 }
 
@@ -2723,9 +2788,59 @@ redo_get_tcp_relay:
     return 0;
 }
 
+int IOEX_get_files(IOEXCarrier *w, IOEXFilesIterateCallback *callback, void *context)
+{
+    ListIterator it;
+    int rc;
+
+    if (!w || !callback) {
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+
+    list_iterate(w->file_senders, &it);
+    while(list_iterator_has_next(&it)) {
+        FileTracker *ft;
+
+        rc = list_iterator_next(&it, (void **)&ft);
+        if (rc == 0)
+            break;
+
+        IOEXFileInfo wfi;
+
+        memcpy(&wfi, &ft->fi, sizeof(IOEXFileInfo));
+        deref(ft);
+
+        if (!callback(0, &wfi, context))
+            return 0;
+    }
+    list_iterate(w->file_receivers, &it);
+    while(list_iterator_has_next(&it)) {
+        FileTracker *ft;
+
+        rc = list_iterator_next(&it, (void **)&ft);
+        if (rc == 0)
+            break;
+
+        IOEXFileInfo wfi;
+
+        memcpy(&wfi, &ft->fi, sizeof(IOEXFileInfo));
+        deref(ft);
+
+        if (!callback(1, &wfi, context))
+            return 0;
+    }
+
+    /* Friend list is end */
+    callback(0, NULL, context);
+
+    return 0;
+}
+
 int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *filename)
 {
     uint32_t friend_number;
+    uint32_t file_number;
     int rc;
 
     if(!w || !friendid || !filename){
@@ -2752,11 +2867,22 @@ int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *fil
         return -1;
     }
 
-    rc = dht_file_send_request(&w->dht, friend_number, filename);
-    if(rc < 0){
-        // TODO: rc might not be meaningful
-        IOEX_set_error(rc);
+    file_number = dht_file_send_request(&w->dht, friend_number, filename);
+    if(file_number < 0){
+        // TODO: might not be meaningful
+        IOEX_set_error(file_number);
         return -1;
+    }
+
+    FileTracker *sender = (FileTracker *)rc_alloc(sizeof(FileTracker), NULL);
+    if (sender){
+        strncpy(sender->fi.file_name, filename, sizeof(sender->fi.file_name));
+        sender->fi.friend_number = friend_number;
+        sender->fi.file_index = file_number;
+        sender->le.data = sender;
+
+        list_add(w->file_senders, &sender->le);
+        deref(sender);
     }
 
     return 0;

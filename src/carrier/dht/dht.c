@@ -926,3 +926,18 @@ int dht_file_send_accept(DHT *dht, uint32_t friend_number, const uint32_t file_n
     vlogE("Send file control error: %i", error);
     return -1;
 }
+
+int dht_file_send_chunk(DHT *dht, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data, int len)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_SEND_CHUNK error;
+
+    rc = tox_file_send_chunk(tox, friend_number, file_number, position, data, len, &error);
+    if(rc){
+        vlogI("Send file chunk from position %lu with length %d to friend %u", position, len, friend_number);
+        return 0;
+    }
+    vlogE("Send file chunk error: %i", error);
+    return -1;
+}
