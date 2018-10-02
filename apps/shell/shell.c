@@ -1960,6 +1960,13 @@ static void file_chunk_request_callback(IOEXCarrier *w, const char *friendid, co
     output("From position: %u and length: %u\n", position, length);
 }
 
+static void file_chunk_receive_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
+                                        const uint64_t position, const size_t length, void *context)
+{
+    output("Friend[%s] sent a file chunk of file[%s] index:%u]\n", friendid, filename, fileindex);
+    output("From position: %u and length: %u\n", position, length);
+}
+
 static void usage(void)
 {
     printf("IOEX shell, an interactive console client application.\n");
@@ -2099,6 +2106,7 @@ int main(int argc, char *argv[])
     callbacks.file_request = file_request_callback;
     callbacks.file_accepted = file_accepted_callback;
     callbacks.file_chunk_request = file_chunk_request_callback;
+    callbacks.file_chunk_receive = file_chunk_receive_callback;
 
     w = IOEX_new(&opts, &callbacks, NULL);
     deref(cfg);

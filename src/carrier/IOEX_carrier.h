@@ -672,6 +672,28 @@ typedef struct IOEXCallbacks {
                                const char *filename, const uint64_t position, const size_t length, 
                                void *context);
 
+    /**
+     * \~English
+     * An application-defined function that process received file chunks.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      friendid    [in] The user id from who asked us to send a chunk of file.
+     * @param
+     *      fileindex   [in] The index of the file which is requested.
+     * @param
+     *      filename    [in] The name of the file which is requested.
+     * @param
+     *      position    [in] The start position of the file in bytes that should be sent.
+     * @param
+     *      length      [in] The size of the file that should be sent in bytes.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*file_chunk_receive)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
+                               const char *filename, const uint64_t position, const size_t length, 
+                               void *context);
 } IOEXCallbacks;
 
 /**

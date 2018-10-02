@@ -1703,6 +1703,18 @@ void notify_file_request_cb(const uint32_t friend_number, const uint32_t file_nu
     }
     strcpy(tmpid, fi->info.user_info.userid);
 
+    // TODO: implement in a main loop
+    FileTracker *receiver = (FileTracker *)rc_alloc(sizeof(FileTracker), NULL);
+    if (receiver){
+        strncpy(receiver->fi.file_name, filename, sizeof(receiver->fi.file_name));
+        receiver->fi.friend_number = friend_number;
+        receiver->fi.file_index = file_number;
+        receiver->le.data = receiver;
+
+        list_add(w->file_receivers, &receiver->le);
+        deref(receiver);
+    }
+
     if(w->callbacks.file_request){
         w->callbacks.file_request(w, tmpid, file_number, filename, filesize, w->context);
     }
@@ -1731,7 +1743,7 @@ void notify_file_accepted_cb(const uint32_t friend_number, const uint32_t file_n
 }
 
 static 
-void nofity_file_chunk_request_cb(const uint32_t friend_number, const uint32_t file_number, const uint64_t position,
+void notify_file_chunk_request_cb(const uint32_t friend_number, const uint32_t file_number, const uint64_t position,
                                   const size_t length, void *context)
 {
     IOEXCarrier *w = (IOEXCarrier *)context;
@@ -1795,6 +1807,68 @@ void nofity_file_chunk_request_cb(const uint32_t friend_number, const uint32_t f
     }
 }
 
+static
+void notify_file_chunk_receive_cb(uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data,
+                                  size_t length, void *context)
+{
+    IOEXCarrier *w = (IOEXCarrier *)context;
+    FriendInfo *fi;
+    char tmpid[IOEX_MAX_ID_LEN + 1];
+    int rc;
+
+    assert(friend_number != UINT32_MAX);
+
+    fi = friends_get(w->friends, friend_number);
+    if (!fi) {
+        vlogE("Carrier: Unknown friend number %lu, file chunk request for %u dropped.", friend_number, file_number);
+        return;
+    }
+    strcpy(tmpid, fi->info.user_info.userid);
+
+    // TODO: use file sender structure to set the event, and do the transimitting in main loop
+    //       don't just send the chunk in this callback
+    ListIterator it;
+    FILE *fp = NULL;
+    char filename[4096];
+    list_iterate(w->file_receivers, &it);
+    while(list_iterator_has_next(&it)) {
+        FileTracker *receiver;
+        int rc;
+
+        rc = list_iterator_next(&it, (void **)&receiver);
+        if (rc == 0)
+            break;
+
+        IOEXFileInfo *info = &receiver->fi;
+
+        if(info->friend_number == friend_number && info->file_index == file_number){
+            if(length == 0){
+                deref(list_remove_entry(w->file_receivers, &receiver->le));
+                deref(receiver);
+                break;
+            }
+            else {
+                fp = fopen(info->file_name, "ab");
+                strncpy(filename, info->file_name, sizeof(filename));
+                deref(receiver);
+                break;
+            }
+        }
+
+        deref(receiver);
+    }
+
+    if(fp != NULL && length > 0){
+        fseek(fp, position, SEEK_SET);
+        fwrite(data, length, 1, fp);
+        fclose(fp);
+    }
+
+    if(w->callbacks.file_chunk_receive){
+        w->callbacks.file_chunk_receive(w, tmpid, file_number, filename, position, length, w->context);
+    }
+}
+
 static void connect_to_bootstraps(IOEXCarrier *w)
 {
     int i;
@@ -1842,7 +1916,8 @@ int IOEX_run(IOEXCarrier *w, int interval)
 
     w->dht_callbacks.notify_file_request = notify_file_request_cb;
     w->dht_callbacks.notify_file_accepted = notify_file_accepted_cb;
-    w->dht_callbacks.notify_file_chunk_request = nofity_file_chunk_request_cb;
+    w->dht_callbacks.notify_file_chunk_request = notify_file_chunk_request_cb;
+    w->dht_callbacks.notify_file_chunk_receive = notify_file_chunk_receive_cb;
 
     w->dht_callbacks.context = w;
 

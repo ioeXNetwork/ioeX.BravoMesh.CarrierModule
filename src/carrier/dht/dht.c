@@ -403,7 +403,7 @@ void notify_friend_message_cb(Tox *tox, uint32_t friend_number,
 
 static 
 void notify_file_request_cb(Tox *tox, uint32_t friend_number, uint32_t real_filenumber, uint32_t kind, uint64_t file_size,
-                              const uint8_t *filename, size_t filename_length, void *context)
+                            const uint8_t *filename, size_t filename_length, void *context)
 {
     DHTCallbacks *cbs = (DHTCallbacks *)context;
     cbs->notify_file_request(friend_number, real_filenumber, filename, file_size, cbs->context);
@@ -414,6 +414,7 @@ void notify_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_numb
                             void *context)
 {
     DHTCallbacks *cbs = (DHTCallbacks *)context;
+    // TODO: add other control callbacks. Also have a better way to determine it is start or resume
     if(control == TOX_FILE_CONTROL_RESUME){
         cbs->notify_file_accepted(friend_number, file_number, cbs->context);
     }
@@ -421,10 +422,18 @@ void notify_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_numb
 
 static 
 void notify_file_chunk_request_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
-                               size_t length, void *context)
+                                  size_t length, void *context)
 {
     DHTCallbacks *cbs = (DHTCallbacks *)context;
     cbs->notify_file_chunk_request(friend_number, file_number, position, length, cbs->context);
+}
+
+static
+void notify_file_chunk_receive_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data,
+                                  size_t length, void *context)
+{
+    DHTCallbacks *cbs = (DHTCallbacks *)context;
+    cbs->notify_file_chunk_receive(friend_number, file_number, position, data, length, cbs->context);
 }
 
 static
@@ -501,6 +510,7 @@ int dht_new(const uint8_t *savedata, size_t datalen, bool udp_enabled, DHT *dht)
     tox_callback_file_recv(tox, notify_file_request_cb);
     tox_callback_file_recv_control(tox, notify_file_control_cb);
     tox_callback_file_chunk_request(tox, notify_file_chunk_request_cb);
+    tox_callback_file_recv_chunk(tox, notify_file_chunk_receive_cb);
 
     dht->tox = tox;
 

@@ -58,6 +58,9 @@ struct DHTCallbacks {
 
     void (*notify_file_chunk_request)(uint32_t friend_number, uint32_t file_number, uint64_t position,
                                       size_t length, void *context);
+
+    void (*notify_file_chunk_receive)(uint32_t friend_number, uint32_t file_number, uint64_t position, 
+                                      const uint8_t *data, size_t length, void *context)
 };
 
 typedef struct DHTCallbacks DHTCallbacks;
