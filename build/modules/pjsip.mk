@@ -1,7 +1,7 @@
 include environ/$(HOST)-$(ARCH).mk
 
 PACKAGE_NAME   = pjproject-2.5.5.tar.bz2
-PACKAGE_URL    = http://www.pjsip.org/release/2.5.5/$(PACKAGE_NAME)
+PACKAGE_URL    = https://www.pjsip.org/release/2.5.5/$(PACKAGE_NAME)
 SRC_DIR        = $(DEPS_DIR)/pjproject-2.5.5
 
 CONFIG_COMMAND = $(shell scripts/pjsip.sh "command" $(HOST) $(ARCH))
