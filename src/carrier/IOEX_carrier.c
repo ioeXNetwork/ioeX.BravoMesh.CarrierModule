@@ -1765,7 +1765,7 @@ void notify_file_chunk_request_cb(const uint32_t friend_number, const uint32_t f
     //       don't just send the chunk in this callback
     ListIterator it;
     FILE *fp = NULL;
-    char fullpath[1024];
+    char fullpath[IOEX_MAX_FULL_PATH_LEN + 1];
     list_iterate(w->file_senders, &it);
     while(list_iterator_has_next(&it)) {
         FileTracker *sender;
@@ -1784,7 +1784,10 @@ void notify_file_chunk_request_cb(const uint32_t friend_number, const uint32_t f
                 break;
             }
             else {
-                if(info->file_path[strlen(info->file_path)-1] == '/'){
+                if(info->file_path == NULL || strlen(info->file_path) == 0){
+                    snprintf(fullpath, sizeof(fullpath), "%s", info->file_name);
+                }
+                else if(info->file_path[strlen(info->file_path)-1] == '/'){
                     snprintf(fullpath, sizeof(fullpath), "%s%s", info->file_path, info->file_name);
                 }
                 else {
@@ -1799,12 +1802,17 @@ void notify_file_chunk_request_cb(const uint32_t friend_number, const uint32_t f
         deref(sender);
     }
 
-    if(fp != NULL && length > 0){
-        fseek(fp, position, SEEK_SET);
-        char data[4096];
-        int len = fread(data, 1, length, fp);
-        rc = dht_file_send_chunk(&w->dht, friend_number, file_number, position, data, len);
-        fclose(fp);
+    if(fp != NULL){
+        if(length > 0){
+            fseek(fp, position, SEEK_SET);
+            char data[4096];
+            int len = fread(data, 1, length, fp);
+            rc = dht_file_send_chunk(&w->dht, friend_number, file_number, position, data, len);
+            fclose(fp);
+        }
+    }
+    else {
+        vlogE("Cannot respond to the file[%s] chunk request", fullpath);
     }
 
     // TODO: make it better for progress
@@ -1835,7 +1843,7 @@ void notify_file_chunk_receive_cb(uint32_t friend_number, uint32_t file_number, 
     //       don't just send the chunk in this callback
     ListIterator it;
     FILE *fp = NULL;
-    char fullpath[1024];
+    char fullpath[IOEX_MAX_FULL_PATH_LEN + 1];
     list_iterate(w->file_receivers, &it);
     while(list_iterator_has_next(&it)) {
         FileTracker *receiver;
@@ -2874,6 +2882,24 @@ redo_get_tcp_relay:
     return 0;
 }
 
+bool is_file_exist(const char *fullpath){
+    FILE *fp = fopen(fullpath, "rb");
+    if(fp == NULL){
+        return false;
+    }
+    fclose(fp);
+    return true;
+}
+
+bool is_file_writable(const char *fullpath){
+    FILE *fp = fopen(fullpath, "ab");
+    if(fp == NULL){
+        return false;
+    }
+    fclose(fp);
+    return true;
+}
+
 int IOEX_get_files(IOEXCarrier *w, IOEXFilesIterateCallback *callback, void *context)
 {
     ListIterator it;
@@ -2954,12 +2980,10 @@ int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *ful
         return -1;
     }
 
-    FILE *fp = fopen(fullpath, "rb");
-    if(fp == NULL){
+    if (!is_file_exist(fullpath)){
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_INVALID));
         return -1;
     }
-    fclose(fp);
 
     file_number = dht_file_send_request(&w->dht, friend_number, fullpath);
     if(file_number < 0){
@@ -3027,20 +3051,18 @@ int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *file
         return -1;
     }
 
-    char fullpath[1024];
+    char fullpath[IOEX_MAX_FULL_PATH_LEN + 1];
     if(filepath[strlen(filepath)-1]=='/'){
         snprintf(fullpath, sizeof(fullpath), "%s%s", filepath, filename);
     }
     else{
         snprintf(fullpath, sizeof(fullpath), "%s/%s", filepath, filename);
     }
-    vlogI("fullpath=%s",fullpath);
-    FILE *fp;
-    if((fp = fopen(fullpath, "ab"))==NULL){
+
+    if(!is_file_writable(fullpath)){
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_DENY));
         return -1;
     }
-    fclose(fp);
 
     ListIterator it;
     list_iterate(w->file_receivers, &it);

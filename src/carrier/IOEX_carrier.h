@@ -122,6 +122,24 @@ extern "C" {
  */
 #define IOEX_MAX_APP_MESSAGE_LEN         1024
 
+/**
+ * \~English
+ * Carrier file name max length.
+ */
+#define IOEX_MAX_FILE_NAME_LEN           511
+
+/**
+ * \~English
+ * Carrier file path max length.
+ */
+#define IOEX_MAX_FILE_PATH_LEN           511
+
+/**
+ * \~English
+ * Carrier file full path max length.
+ */
+#define IOEX_MAX_FULL_PATH_LEN           (IOEX_MAX_FILE_NAME_LEN + IOEX_MAX_FILE_PATH_LEN + 1)
+
 typedef struct IOEXCarrier IOEXCarrier;
 
 /******************************************************************************
@@ -393,8 +411,8 @@ typedef struct IOEXFriendInfo {
 
 typedef struct IOEXFileInfo {
     // TODO: use variable length string
-    char file_name[512];
-    char file_path[512];
+    char file_name[IOEX_MAX_FILE_NAME_LEN+1];
+    char file_path[IOEX_MAX_FILE_PATH_LEN+1];
     uint32_t friend_number;
     uint32_t file_index;
 } IOEXFileInfo;
