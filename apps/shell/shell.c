@@ -1612,13 +1612,13 @@ static void file_send_request(IOEXCarrier *w, int argc, char *argv[])
 static void file_send_accept(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
-    if(argc != 3){
+    if(argc != 5){
         output("Invalid command syntax.\n");
         return;
     }
-    rc = IOEX_send_file_accept(w, argv[1], argv[2]);
+    rc = IOEX_send_file_accept(w, argv[1], argv[2], argv[3], argv[4]);
     if(rc < 0){
-        output("Invalid request. %d\n", rc);
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
     }
     else{
         output("Accepted file request.\n");
@@ -1676,7 +1676,7 @@ struct command {
 	{ "tsinit",     tsinit,                 "tsinit" },
     { "tsfile",     tsfile,         	    "tsfile userid file_name 0" },
     { "filesend",   file_send_request, 	    "filesend userid filename" },
-    { "fileaccept", file_send_accept, 	    "fileaccept userid fileindex" },
+    { "fileaccept", file_send_accept, 	    "fileaccept userid fileindex newfilename filepath" },
     { "files",      list_files,      	    "files" },
     { "kill",       kill_carrier,           "kill" },
     { NULL }
@@ -1944,7 +1944,7 @@ static void file_request_callback(IOEXCarrier *w, const char *friendid, const ui
     output("Send file request from friend[%s]\n", friendid);
     output("File index %u name [%s] with size %u\n", fileindex, filename, filesize);
     output("Reply use following commands:\n");
-    output("  fileaccept %s %u\n", friendid, fileindex);
+    output("  fileaccept %s %u <new file name> <file path>\n", friendid, fileindex);
     output("  filereject %s %u\n", friendid, fileindex);
 }
 

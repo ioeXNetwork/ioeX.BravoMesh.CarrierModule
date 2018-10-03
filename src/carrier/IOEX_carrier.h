@@ -393,8 +393,8 @@ typedef struct IOEXFriendInfo {
 
 typedef struct IOEXFileInfo {
     // TODO: use variable length string
-    char file_name[4096];
-    char file_path[4096];
+    char file_name[512];
+    char file_path[512];
     uint32_t friend_number;
     uint32_t file_index;
 } IOEXFileInfo;
@@ -660,7 +660,7 @@ typedef struct IOEXCallbacks {
      * @param
      *      fileindex   [in] The index of the file which is requested.
      * @param
-     *      filename    [in] The name of the file which is requested.
+     *      fullpath    [in] The path with name of the local file.
      * @param
      *      position    [in] The start position of the file in bytes that should be sent.
      * @param
@@ -669,7 +669,7 @@ typedef struct IOEXCallbacks {
      *      context     [in] The application defined context data.
      */
     void (*file_chunk_request)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
-                               const char *filename, const uint64_t position, const size_t length, 
+                               const char *fullpath, const uint64_t position, const size_t length, 
                                void *context);
 
     /**
@@ -679,20 +679,20 @@ typedef struct IOEXCallbacks {
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
      * @param
-     *      friendid    [in] The user id from who asked us to send a chunk of file.
+     *      friendid    [in] The user id from who sent us the file chunks.
      * @param
-     *      fileindex   [in] The index of the file which is requested.
+     *      fileindex   [in] The index of the file which is received.
      * @param
-     *      filename    [in] The name of the file which is requested.
+     *      fullpath    [in] The path with name of the local file.
      * @param
-     *      position    [in] The start position of the file in bytes that should be sent.
+     *      position    [in] The start position of the file in bytes to be store.
      * @param
-     *      length      [in] The size of the file that should be sent in bytes.
+     *      length      [in] The size of the file that should be stored in bytes.
      * @param
      *      context     [in] The application defined context data.
      */
     void (*file_chunk_receive)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
-                               const char *filename, const uint64_t position, const size_t length, 
+                               const char *fullpath, const uint64_t position, const size_t length, 
                                void *context);
 } IOEXCallbacks;
 
@@ -1324,7 +1324,7 @@ int IOEX_reply_friend_invite(IOEXCarrier *carrier, const char *to,
  *      retrieved by calling IOEX_get_error().
  */
 CARRIER_API
-int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *filename);
+int IOEX_send_file_request(IOEXCarrier *carrier, const char *friendid, const char *filename);
 
 /**
  * \~English
@@ -1336,13 +1336,18 @@ int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *fil
  *      friendid    [in] The user id from who send the file send request.
  * @param
  *      fileindex   [in] The index of the file that will be accepted.
+ * @param
+ *      filename    [in] Rename the file as filename.
+ * @param
+ *      filepath    [in] The path to store the file
  * @return
  *      0 if the request successfully send to the friend.
  *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling IOEX_get_error().
  */
 CARRIER_API
-int IOEX_send_file_accept(IOEXCarrier *carrier, const char *friendid, const char *fileindex);
+int IOEX_send_file_accept(IOEXCarrier *carrier, const char *friendid, const char *fileindex, 
+                          const char *filename, const char *filepath);
 
 /**
  * \~English
@@ -1597,6 +1602,18 @@ int IOEX_get_files(IOEXCarrier *carrier, IOEXFilesIterateCallback *callback, voi
  * Friend is offline.
  */
 #define IOEXERR_FRIEND_OFFLINE                       0x25
+
+/**
+ * \~English
+ * File cannot be stored.
+ */
+#define IOEXERR_FILE_DENY                            0x26
+
+/**
+ * \~English
+ * File cannot be read.
+ */
+#define IOEXERR_FILE_INVALID                         0x27
 
 /**
  * \~English

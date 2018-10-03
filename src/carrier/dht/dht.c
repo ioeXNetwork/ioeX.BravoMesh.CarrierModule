@@ -907,18 +907,30 @@ int dht_get_random_tcp_relay(DHT *dht, char *tcp_relay, size_t buflen,
     return 0;
 }
 
-int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *filename)
+int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath)
 {
     Tox *tox = dht->tox;
-    FILE *tempfile = fopen(filename, "rb");
+    FILE *tempfile = fopen(fullpath, "rb");
+    char filename[512];
+
     if(tempfile == NULL){
         return -1;
     }
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
     fseek(tempfile, 0, SEEK_SET);
+
+    char *pch = strrchr(fullpath, '/');
+    if(pch == NULL){
+        strncpy(filename, fullpath, sizeof(filename));
+    }
+    else{
+        strncpy(filename, pch+1, sizeof(filename));
+    }
     uint32_t filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename, 
                                      strlen(filename), 0);
+    fclose(tempfile);
+
     return filenum;
 }
 
