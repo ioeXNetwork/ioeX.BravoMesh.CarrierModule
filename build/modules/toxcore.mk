@@ -1,8 +1,10 @@
 include environ/$(HOST)-$(ARCH).mk
+include environ/gitlab.mk
 
-PACKAGE_NAME   = c-toxcore-0.1.10.tar.gz
-PACKAGE_URL    = https://github.com/TokTok/c-toxcore/releases/download/v0.1.10/$(PACKAGE_NAME)
-SRC_DIR        = $(DEPS_DIR)/c-toxcore-0.1.10
+GITLAB_PACKAGE_NAME   = c-toxcore
+GITLAB_PACKAGE_URL    = http://$(GITLAB_USERNAME):$(GITLAB_PASSWORD)@git.pin2wall.com/P2PNetwork/$(GITLAB_PACKAGE_NAME).git
+GITLAB_PACKAGE_BRANCH = develop
+SRC_DIR        = $(DEPS_DIR)/$(GITLAB_PACKAGE_NAME)
 
 CONFIG_COMMAND = $(shell scripts/toxcore.sh "command" $(HOST) $(ARCH) $(HOST_COMPILER))
 CONFIG_OPTIONS = --prefix=$(DIST_DIR) \
@@ -16,7 +18,6 @@ CONFIG_OPTIONS = --prefix=$(DIST_DIR) \
         --disable-av
 
 define configure
-    $(BUILD_DIR)/patch/toxcore.sh $(SRC_DIR)
     if [ ! -e $(SRC_DIR)/configure ]; then \
         cd $(SRC_DIR) && ./autogen.sh; \
     fi
