@@ -1670,6 +1670,12 @@ int IOEX_get_files(IOEXCarrier *carrier, IOEXFilesIterateCallback *callback, voi
 
 /**
  * \~English
+ * File already existed.
+ */
+#define IOEXERR_FILE_EXISTED                         0x28
+
+/**
+ * \~English
  * Unknown error.
  */
 #define IOEXERR_UNKNOWN                              0xFF
