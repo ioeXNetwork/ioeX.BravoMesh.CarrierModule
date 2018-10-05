@@ -1773,21 +1773,21 @@ bool get_fullpath(const FileTracker *ft, const char *fullpath)
 
     IOEXFileInfo *info = &ft->fi;
     if(info->file_path == NULL || strlen(info->file_path) == 0){
-        snprintf(fullpath, sizeof(fullpath), "%s", info->file_name);
+        snprintf(fullpath, IOEX_MAX_FULL_PATH_LEN, "%s", info->file_name);
     }
     else if(info->file_path[strlen(info->file_path)-1] == '/'){
-        snprintf(fullpath, sizeof(fullpath), "%s%s", info->file_path, info->file_name);
+        snprintf(fullpath, IOEX_MAX_FULL_PATH_LEN, "%s%s", info->file_path, info->file_name);
     }
     else {
-        snprintf(fullpath, sizeof(fullpath), "%s/%s", info->file_path, info->file_name);
+        snprintf(fullpath, IOEX_MAX_FULL_PATH_LEN, "%s/%s", info->file_path, info->file_name);
     }
     return true;
 }
 
-bool _find_file_tracker(List *list, uint32_t friend_number, uint32_t file_number, const FileTracker *file_tracker)
+FileTracker* _find_file_tracker(List *list, uint32_t friend_number, uint32_t file_number)
 {
-    if(!file_tracker || !list)
-        return false;
+    if(!list)
+        return NULL;
 
     ListIterator it;
     FileTracker *ft = NULL;
@@ -1802,23 +1802,20 @@ bool _find_file_tracker(List *list, uint32_t friend_number, uint32_t file_number
         }
         info = &ft->fi;
         if(info->friend_number == friend_number && info->file_index == file_number){
-            // found
-            memcpy(file_tracker, ft, sizeof(FileTracker));
-            deref(ft);
-            return true;
+            return ft;
         }
     }
-    return false;
+    return NULL;
 }
 
-bool find_file_sender(IOEXCarrier *w, uint32_t friend_number, uint32_t file_number, const FileTracker *sender)
+FileTracker* find_file_sender(IOEXCarrier *w, uint32_t friend_number, uint32_t file_number)
 {
-    return _find_file_tracker(w->file_senders, friend_number, file_number, sender);
+    return _find_file_tracker(w->file_senders, friend_number, file_number);
 }
 
-bool find_file_receiver(IOEXCarrier *w, uint32_t friend_number, uint32_t file_number, const FileTracker *receiver)
+FileTracker* find_file_receiver(IOEXCarrier *w, uint32_t friend_number, uint32_t file_number)
 {
-    return _find_file_tracker(w->file_receivers, friend_number, file_number, receiver);
+    return _find_file_tracker(w->file_receivers, friend_number, file_number);
 }
 
 static 
@@ -1844,27 +1841,27 @@ void notify_file_chunk_request_cb(const uint32_t friend_number, const uint32_t f
 
     FILE *fp = NULL;
     char fullpath[IOEX_MAX_FULL_PATH_LEN + 1];
-    FileTracker sender;
-    if(find_file_sender(w, friend_number, file_number, &sender)){
+    FileTracker *sender;
+    if((sender = find_file_sender(w, friend_number, file_number)) != NULL){
         if(length == 0){
-            deref(list_remove_entry(w->file_senders, &sender.le));
+            deref(list_remove_entry(w->file_senders, &sender->le));
         }
-        else if(get_fullpath(&sender, fullpath)){
+        else if(get_fullpath(sender, fullpath)){
             fp = fopen(fullpath, "rb");
         }
     }
 
-    if(fp != NULL){
-        if(length > 0){
+    if(length > 0){
+        if(fp != NULL){
             fseek(fp, position, SEEK_SET);
             char data[4096];
             int len = fread(data, 1, length, fp);
             rc = dht_file_send_chunk(&w->dht, friend_number, file_number, position, data, len);
             fclose(fp);
         }
-    }
-    else {
-        vlogE("Cannot respond to the file[%s] chunk request", fullpath);
+        else {
+            vlogE("Cannot respond to the file[%s] chunk request", fullpath);
+        }
     }
 
     // TODO: make it better for progress
@@ -1894,30 +1891,30 @@ void notify_file_chunk_receive_cb(uint32_t friend_number, uint32_t file_number, 
     // TODO: use file sender structure to set the event, and do the transimitting in main loop
     //       don't just send the chunk in this callback
 
-    FileTracker receiver;
+    FileTracker *receiver;
     FILE *fp = NULL;
     char fullpath[IOEX_MAX_FULL_PATH_LEN + 1];
-    if(find_file_receiver(w, friend_number, file_number, &receiver)){
+    if((receiver = find_file_receiver(w, friend_number, file_number)) != NULL){
         if(length == 0){
-            deref(list_remove_entry(w->file_receivers, &receiver.le));
+            deref(list_remove_entry(w->file_receivers, &receiver->le));
         }
-        else if(get_fullpath(&receiver, fullpath)){
+        else if(get_fullpath(receiver, fullpath)){
             fp = fopen(fullpath, "ab");
         }
     }
 
-    if(fp != NULL){
-        if(length > 0){
+    if(length > 0){
+        if(fp != NULL){
             fseek(fp, position, SEEK_SET);
             fwrite(data, length, 1, fp);
             fclose(fp);
         }
-        else{
-            vlogI("File[%s] receive complete.", fullpath);
+        else {
+            vlogE("Cannot write file chunk to the file[%s]", fullpath);
         }
     }
-    else {
-        vlogE("Cannot respond to the file[%s] chunk request", fullpath);
+    else{
+        vlogI("File[%s] receive complete.", fullpath);
     }
 
     if(w->callbacks.file_chunk_receive){
@@ -3117,8 +3114,8 @@ int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *file
 
         IOEXFileInfo *info = &receiver->fi;
         if(info->friend_number == friend_number && info->file_index == temp_fileindex){
-            strncpy(info->file_name, filename, sizeof(info->file_name));
-            strncpy(info->file_path, filepath, sizeof(info->file_path));
+            strncpy(info->file_name, filename, IOEX_MAX_FILE_NAME_LEN);
+            strncpy(info->file_path, filepath, IOEX_MAX_FILE_PATH_LEN);
             deref(receiver);
             break;
         }
