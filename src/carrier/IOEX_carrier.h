@@ -669,6 +669,23 @@ typedef struct IOEXCallbacks {
 
     /**
      * \~English
+     * An application-defined function that process the control message from a friend.
+     * This control message indicates that the friend has rejected our previous send file request.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      friendid    [in] The user id from who rejected our send file request.
+     * @param
+     *      fileindex   [in] The index of the file that has been rejected.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*file_rejected)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
+                          void *context);
+
+    /**
+     * \~English
      * An application-defined function that process the file chunk request.
      *
      * @param
@@ -1351,7 +1368,7 @@ int IOEX_send_file_request(IOEXCarrier *carrier, const char *friendid, const cha
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
  * @param
- *      friendid    [in] The user id from who send the file send request.
+ *      friendid    [in] The user id from who sent the file send request.
  * @param
  *      fileindex   [in] The index of the file that will be accepted.
  * @param
@@ -1366,6 +1383,24 @@ int IOEX_send_file_request(IOEXCarrier *carrier, const char *friendid, const cha
 CARRIER_API
 int IOEX_send_file_accept(IOEXCarrier *carrier, const char *friendid, const char *fileindex, 
                           const char *filename, const char *filepath);
+
+/**
+ * \~English
+ * An application-defined function that rejects a file send request.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      friendid    [in] The user id from who sent the file send request.
+ * @param
+ *      fileindex   [in] The index of the file that will be rejected.
+ * @return
+ *      0 if the request successfully send to the friend.
+ *      Otherwise, return -1, and a specific error code can be
+ *      retrieved by calling IOEX_get_error().
+ */
+CARRIER_API
+int IOEX_send_file_reject(IOEXCarrier *carrier, const char *friendid, const char *fileindex);
 
 /**
  * \~English

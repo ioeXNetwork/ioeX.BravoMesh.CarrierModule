@@ -418,6 +418,9 @@ void notify_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_numb
     if(control == TOX_FILE_CONTROL_RESUME){
         cbs->notify_file_accepted(friend_number, file_number, cbs->context);
     }
+    else if(control == TOX_FILE_CONTROL_CANCEL){
+        cbs->notify_file_rejected(friend_number, file_number, cbs->context);
+    }
 }
 
 static 
@@ -943,6 +946,21 @@ int dht_file_send_accept(DHT *dht, uint32_t friend_number, const uint32_t file_n
     rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error);
     if(rc){
         vlogI("Accepted file.");
+        return 0;
+    }
+    vlogE("Send file control error: %i", error);
+    return -1;
+}
+
+int dht_file_send_reject(DHT *dht, uint32_t friend_number, const uint32_t file_number)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_CONTROL error;
+
+    rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, &error);
+    if(rc){
+        vlogI("Rejected file.");
         return 0;
     }
     vlogE("Send file control error: %i", error);
