@@ -1625,6 +1625,22 @@ static void file_send_accept(IOEXCarrier *w, int argc, char *argv[])
     }
 }
 
+static void file_send_reject(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 3){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_send_file_reject(w, argv[1], argv[2]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("Rejected file request.\n");
+    }
+}
+
 //test
 
 struct command {
@@ -1677,6 +1693,7 @@ struct command {
     { "tsfile",     tsfile,         	    "tsfile userid file_name 0" },
     { "filesend",   file_send_request, 	    "filesend userid filename" },
     { "fileaccept", file_send_accept, 	    "fileaccept userid fileindex newfilename filepath" },
+    { "filereject", file_send_reject, 	    "filereject userid fileindex" },
     { "files",      list_files,      	    "files" },
     { "kill",       kill_carrier,           "kill" },
     { NULL }
@@ -1953,6 +1970,11 @@ static void file_accepted_callback(IOEXCarrier *w, const char *friendid, const u
     output("Friend[%s] has accepted file request [index:%u]\n", friendid, fileindex);
 }
 
+static void file_rejected_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+{
+    output("Friend[%s] has rejected file request [index:%u]\n", friendid, fileindex);
+}
+
 static void file_chunk_request_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
                                         const uint64_t position, const size_t length, void *context)
 {
@@ -2105,6 +2127,7 @@ int main(int argc, char *argv[])
 
     callbacks.file_request = file_request_callback;
     callbacks.file_accepted = file_accepted_callback;
+    callbacks.file_rejected = file_rejected_callback;
     callbacks.file_chunk_request = file_chunk_request_callback;
     callbacks.file_chunk_receive = file_chunk_receive_callback;
 
