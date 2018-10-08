@@ -962,6 +962,21 @@ int dht_file_send_accept(DHT *dht, uint32_t friend_number, const uint32_t file_n
     return -1;
 }
 
+int dht_file_send_seek(DHT *dht, uint32_t friend_number, const uint32_t file_number, uint64_t position)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_CONTROL error;
+
+    rc = tox_file_seek(tox, friend_number, file_number, position, &error);
+    if(rc){
+        vlogI("Sent seek request.");
+        return 0;
+    }
+    vlogE("Send file seek error: %i", error);
+    return -1;
+}
+
 int dht_file_send_reject(DHT *dht, uint32_t friend_number, const uint32_t file_number)
 {
     int rc;
