@@ -2039,10 +2039,10 @@ static void file_canceled_callback(IOEXCarrier *w, const char *friendid, const u
     output("Friend[%s] has canceled file request [index:%u]\n", friendid, fileindex);
 }
 
-static void file_chunk_request_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
-                                        const uint64_t position, const size_t length, void *context)
+static void file_chunk_send_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
+                                     const uint64_t position, const size_t length, void *context)
 {
-    output("Friend[%s] sent a file chunk request for file[%s] index:%u]\n", friendid, filename, fileindex);
+    output("Sent a file chunk of file[%s] index:%u to friend[%s]\n", filename, fileindex, friendid);
     output("From position: %u and length: %u\n", position, length);
 }
 
@@ -2195,8 +2195,8 @@ int main(int argc, char *argv[])
     callbacks.file_paused = file_paused_callback;
     callbacks.file_resumed = file_resumed_callback;
     callbacks.file_canceled = file_canceled_callback;
-    //callbacks.file_chunk_request = file_chunk_request_callback;
-    //callbacks.file_chunk_receive = file_chunk_receive_callback;
+    callbacks.file_chunk_send = file_chunk_send_callback;
+    callbacks.file_chunk_receive = file_chunk_receive_callback;
 
     w = IOEX_new(&opts, &callbacks, NULL);
     deref(cfg);
