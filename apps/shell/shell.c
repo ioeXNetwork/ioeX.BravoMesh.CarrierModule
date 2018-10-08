@@ -1641,7 +1641,53 @@ static void file_send_reject(IOEXCarrier *w, int argc, char *argv[])
     }
 }
 
-//test
+static void file_send_pause(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 3){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_send_file_pause(w, argv[1], argv[2]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("Paused file transmission.\n");
+    }
+}
+
+static void file_send_resume(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 3){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_send_file_resume(w, argv[1], argv[2]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("Resumed file transmission.\n");
+    }
+}
+
+static void file_send_cancel(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 3){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_send_file_cancel(w, argv[1], argv[2]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("Canceled file transmission.\n");
+    }
+}
 
 struct command {
     const char *cmd;
@@ -1694,6 +1740,9 @@ struct command {
     { "filesend",   file_send_request, 	    "filesend userid filename" },
     { "fileaccept", file_send_accept, 	    "fileaccept userid fileindex newfilename filepath" },
     { "filereject", file_send_reject, 	    "filereject userid fileindex" },
+    { "filepause",  file_send_pause, 	    "filepause userid fileindex" },
+    { "fileresume", file_send_resume, 	    "fileresume userid fileindex" },
+    { "filecancel", file_send_cancel, 	    "filecancel userid fileindex" },
     { "files",      list_files,      	    "files" },
     { "kill",       kill_carrier,           "kill" },
     { NULL }
@@ -1975,6 +2024,21 @@ static void file_rejected_callback(IOEXCarrier *w, const char *friendid, const u
     output("Friend[%s] has rejected file request [index:%u]\n", friendid, fileindex);
 }
 
+static void file_paused_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+{
+    output("Friend[%s] has paused file transmission [index:%u]\n", friendid, fileindex);
+}
+
+static void file_resumed_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+{
+    output("Friend[%s] has resumed file transmission [index:%u]\n", friendid, fileindex);
+}
+
+static void file_canceled_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+{
+    output("Friend[%s] has canceled file request [index:%u]\n", friendid, fileindex);
+}
+
 static void file_chunk_request_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
                                         const uint64_t position, const size_t length, void *context)
 {
@@ -2128,8 +2192,11 @@ int main(int argc, char *argv[])
     callbacks.file_request = file_request_callback;
     callbacks.file_accepted = file_accepted_callback;
     callbacks.file_rejected = file_rejected_callback;
-    callbacks.file_chunk_request = file_chunk_request_callback;
-    callbacks.file_chunk_receive = file_chunk_receive_callback;
+    callbacks.file_paused = file_paused_callback;
+    callbacks.file_resumed = file_resumed_callback;
+    callbacks.file_canceled = file_canceled_callback;
+    //callbacks.file_chunk_request = file_chunk_request_callback;
+    //callbacks.file_chunk_receive = file_chunk_receive_callback;
 
     w = IOEX_new(&opts, &callbacks, NULL);
     deref(cfg);

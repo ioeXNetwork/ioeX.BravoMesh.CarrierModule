@@ -59,6 +59,15 @@ struct DHTCallbacks {
     void (*notify_file_rejected)(uint32_t friend_number, uint32_t file_number, 
                                  void *context);
 
+    void (*notify_file_paused)(uint32_t friend_number, uint32_t file_number, 
+                               void *context);
+
+    void (*notify_file_resumed)(uint32_t friend_number, uint32_t file_number, 
+                                void *context);
+
+    void (*notify_file_canceled)(uint32_t friend_number, uint32_t file_number, 
+                                 void *context);
+
     void (*notify_file_chunk_request)(uint32_t friend_number, uint32_t file_number, uint64_t position,
                                       size_t length, void *context);
 

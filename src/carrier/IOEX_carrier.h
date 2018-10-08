@@ -686,6 +686,57 @@ typedef struct IOEXCallbacks {
 
     /**
      * \~English
+     * An application-defined function that process the control message from a friend.
+     * This control message indicates that the friend has paused one the currently transmitting file.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      friendid    [in] The user id from who paused the file transmission.
+     * @param
+     *      fileindex   [in] The index of the file that has been paused.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*file_paused)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
+                        void *context);
+
+    /**
+     * \~English
+     * An application-defined function that process the control message from a friend.
+     * This control message indicates that the friend has resumed one the currently transmitting file.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      friendid    [in] The user id from who resumed the file transmission.
+     * @param
+     *      fileindex   [in] The index of the file that has been resumed.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*file_resumed)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
+                         void *context);
+
+    /**
+     * \~English
+     * An application-defined function that process the control message from a friend.
+     * This control message indicates that the friend has canceled one the currently transmitting file.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      friendid    [in] The user id from who canceled the file transmission.
+     * @param
+     *      fileindex   [in] The index of the file that has been canceled.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*file_canceled)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
+                          void *context);
+
+    /**
+     * \~English
      * An application-defined function that process the file chunk request.
      *
      * @param
@@ -1401,6 +1452,60 @@ int IOEX_send_file_accept(IOEXCarrier *carrier, const char *friendid, const char
  */
 CARRIER_API
 int IOEX_send_file_reject(IOEXCarrier *carrier, const char *friendid, const char *fileindex);
+
+/**
+ * \~English
+ * An application-defined function that pause a file transmission.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      friendid    [in] The user id who sends/receives the file.
+ * @param
+ *      fileindex   [in] The index of the file that will be paused.
+ * @return
+ *      0 if the request successfully send to the friend.
+ *      Otherwise, return -1, and a specific error code can be
+ *      retrieved by calling IOEX_get_error().
+ */
+CARRIER_API
+int IOEX_send_file_pause(IOEXCarrier *carrier, const char *friendid, const char *fileindex);
+
+/**
+ * \~English
+ * An application-defined function that resume a file transmission.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      friendid    [in] The user id from who sends/receives the file.
+ * @param
+ *      fileindex   [in] The index of the file that will be resumed.
+ * @return
+ *      0 if the request successfully send to the friend.
+ *      Otherwise, return -1, and a specific error code can be
+ *      retrieved by calling IOEX_get_error().
+ */
+CARRIER_API
+int IOEX_send_file_resume(IOEXCarrier *carrier, const char *friendid, const char *fileindex);
+
+/**
+ * \~English
+ * An application-defined function that cancels a file transmission.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      friendid    [in] The user id from who sends/receives the file.
+ * @param
+ *      fileindex   [in] The index of the file that will be canceled.
+ * @return
+ *      0 if the request successfully send to the friend.
+ *      Otherwise, return -1, and a specific error code can be
+ *      retrieved by calling IOEX_get_error().
+ */
+CARRIER_API
+int IOEX_send_file_cancel(IOEXCarrier *carrier, const char *friendid, const char *fileindex);
 
 /**
  * \~English
