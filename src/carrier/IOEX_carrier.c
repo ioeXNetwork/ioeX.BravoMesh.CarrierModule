@@ -1833,6 +1833,78 @@ void notify_file_rejected_cb(const uint32_t friend_number, const uint32_t file_n
     }
 }
 
+static
+void notify_file_paused_cb(const uint32_t friend_number, const uint32_t file_number, 
+                            void *context)
+{
+    IOEXCarrier *w = (IOEXCarrier *)context;
+    FriendInfo *fi;
+    char tmpid[IOEX_MAX_ID_LEN + 1];
+
+    assert(friend_number != UINT32_MAX);
+
+    fi = friends_get(w->friends, friend_number);
+    if (!fi) {
+        vlogE("Carrier: Unknown friend number %lu, file paused control index %u dropped.", friend_number, file_number);
+        return;
+    }
+    strcpy(tmpid, fi->info.user_info.userid);
+
+    // TODO: update tracker status
+
+    if(w->callbacks.file_paused){
+        w->callbacks.file_paused(w, tmpid, file_number, w->context);
+    }
+}
+
+static
+void notify_file_resumed_cb(const uint32_t friend_number, const uint32_t file_number, 
+                            void *context)
+{
+    IOEXCarrier *w = (IOEXCarrier *)context;
+    FriendInfo *fi;
+    char tmpid[IOEX_MAX_ID_LEN + 1];
+
+    assert(friend_number != UINT32_MAX);
+
+    fi = friends_get(w->friends, friend_number);
+    if (!fi) {
+        vlogE("Carrier: Unknown friend number %lu, file resumed control index %u dropped.", friend_number, file_number);
+        return;
+    }
+    strcpy(tmpid, fi->info.user_info.userid);
+
+    // TODO: update tracker status
+
+    if(w->callbacks.file_resumed){
+        w->callbacks.file_resumed(w, tmpid, file_number, w->context);
+    }
+}
+
+static
+void notify_file_canceled_cb(const uint32_t friend_number, const uint32_t file_number, 
+                             void *context)
+{
+    IOEXCarrier *w = (IOEXCarrier *)context;
+    FriendInfo *fi;
+    char tmpid[IOEX_MAX_ID_LEN + 1];
+
+    assert(friend_number != UINT32_MAX);
+
+    fi = friends_get(w->friends, friend_number);
+    if (!fi) {
+        vlogE("Carrier: Unknown friend number %lu, file canceled control index %u dropped.", friend_number, file_number);
+        return;
+    }
+    strcpy(tmpid, fi->info.user_info.userid);
+
+    // TODO: update tracker status and remove the file (receiver side)
+
+    if(w->callbacks.file_canceled){
+        w->callbacks.file_canceled(w, tmpid, file_number, w->context);
+    }
+}
+
 static 
 void notify_file_chunk_request_cb(const uint32_t friend_number, const uint32_t file_number, const uint64_t position,
                                   const size_t length, void *context)
@@ -1985,6 +2057,9 @@ int IOEX_run(IOEXCarrier *w, int interval)
     w->dht_callbacks.notify_file_request = notify_file_request_cb;
     w->dht_callbacks.notify_file_accepted = notify_file_accepted_cb;
     w->dht_callbacks.notify_file_rejected = notify_file_rejected_cb;
+    w->dht_callbacks.notify_file_paused = notify_file_paused_cb;
+    w->dht_callbacks.notify_file_resumed = notify_file_resumed_cb;
+    w->dht_callbacks.notify_file_canceled = notify_file_canceled_cb;
     w->dht_callbacks.notify_file_chunk_request = notify_file_chunk_request_cb;
     w->dht_callbacks.notify_file_chunk_receive = notify_file_chunk_receive_cb;
 
@@ -3205,6 +3280,161 @@ int IOEX_send_file_reject(IOEXCarrier *w, const char *friendid, const char *file
     return 0;
 }
 
+int IOEX_send_file_pause(IOEXCarrier *w, const char *friendid, const char *fileindex)
+{
+    uint32_t friend_number;
+    uint32_t temp_fileindex;
+    int rc;
+
+    if(!w || !friendid || !fileindex){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+    if(!is_valid_key(friendid)){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+    temp_fileindex = strtoul(fileindex, NULL, 10);
+    if(temp_fileindex == UINT32_MAX){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+
+    if(!w->is_ready){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_READY));
+        return -1;
+    }
+    
+    rc = get_friend_number(w, friendid, &friend_number);
+    if(rc < 0){
+        IOEX_set_error(rc);
+        return -1;
+    }
+
+    if (!friends_exist(w->friends, friend_number)) {
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
+        return -1;
+    }
+
+    // TODO: pause the coresponding sender or receiver
+    //FileTracker *receiver = NULL;
+    //if((receiver = find_file_receiver(w, friend_number, temp_fileindex))!=NULL){
+    //    pause_file_receiver(w, receiver);
+    //}
+
+    rc = dht_file_send_pause(&w->dht, friend_number, temp_fileindex);
+    if(rc < 0){
+        // TODO: rc might not be meaningful
+        IOEX_set_error(rc);
+        return -1;
+    }
+
+    return 0;
+}
+
+int IOEX_send_file_resume(IOEXCarrier *w, const char *friendid, const char *fileindex)
+{
+    uint32_t friend_number;
+    uint32_t temp_fileindex;
+    int rc;
+
+    if(!w || !friendid || !fileindex){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+    if(!is_valid_key(friendid)){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+    temp_fileindex = strtoul(fileindex, NULL, 10);
+    if(temp_fileindex == UINT32_MAX){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+
+    if(!w->is_ready){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_READY));
+        return -1;
+    }
+    
+    rc = get_friend_number(w, friendid, &friend_number);
+    if(rc < 0){
+        IOEX_set_error(rc);
+        return -1;
+    }
+
+    if (!friends_exist(w->friends, friend_number)) {
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
+        return -1;
+    }
+
+    // TODO: resume the coresponding sender or receiver
+    //FileTracker *receiver = NULL;
+    //if((receiver = find_file_receiver(w, friend_number, temp_fileindex))!=NULL){
+    //    resume_file_receiver(w, receiver);
+    //}
+
+    rc = dht_file_send_resume(&w->dht, friend_number, temp_fileindex);
+    if(rc < 0){
+        // TODO: rc might not be meaningful
+        IOEX_set_error(rc);
+        return -1;
+    }
+
+    return 0;
+}
+
+int IOEX_send_file_cancel(IOEXCarrier *w, const char *friendid, const char *fileindex)
+{
+    uint32_t friend_number;
+    uint32_t temp_fileindex;
+    int rc;
+
+    if(!w || !friendid || !fileindex){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+    if(!is_valid_key(friendid)){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+    temp_fileindex = strtoul(fileindex, NULL, 10);
+    if(temp_fileindex == UINT32_MAX){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+
+    if(!w->is_ready){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_READY));
+        return -1;
+    }
+    
+    rc = get_friend_number(w, friendid, &friend_number);
+    if(rc < 0){
+        IOEX_set_error(rc);
+        return -1;
+    }
+
+    if (!friends_exist(w->friends, friend_number)) {
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
+        return -1;
+    }
+
+    // TODO: Remove the correct tracker, sender or receiver
+    //FileTracker *receiver = NULL;
+    //if((receiver = find_file_receiver(w, friend_number, temp_fileindex))!=NULL){
+    //    remove_file_receiver(w, receiver);
+    //}
+
+    rc = dht_file_send_reject(&w->dht, friend_number, temp_fileindex);
+    if(rc < 0){
+        // TODO: rc might not be meaningful
+        IOEX_set_error(rc);
+        return -1;
+    }
+
+    return 0;
+}
 #if defined(_WIN32) || defined(_WIN64)
 #define __thread        __declspec(thread)
 #endif

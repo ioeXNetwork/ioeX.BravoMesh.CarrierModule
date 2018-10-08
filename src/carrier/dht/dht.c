@@ -415,11 +415,21 @@ void notify_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_numb
 {
     DHTCallbacks *cbs = (DHTCallbacks *)context;
     // TODO: add other control callbacks. Also have a better way to determine it is start or resume
-    if(control == TOX_FILE_CONTROL_RESUME){
-        cbs->notify_file_accepted(friend_number, file_number, cbs->context);
-    }
-    else if(control == TOX_FILE_CONTROL_CANCEL){
-        cbs->notify_file_rejected(friend_number, file_number, cbs->context);
+
+    switch(control){
+        case TOX_FILE_CONTROL_PAUSE:
+            cbs->notify_file_paused(friend_number, file_number, cbs->context);
+            break;
+        case TOX_FILE_CONTROL_RESUME:
+            cbs->notify_file_resumed(friend_number, file_number, cbs->context);
+            cbs->notify_file_accepted(friend_number, file_number, cbs->context);
+            break;
+        case TOX_FILE_CONTROL_CANCEL:
+            cbs->notify_file_canceled(friend_number, file_number, cbs->context);
+            cbs->notify_file_rejected(friend_number, file_number, cbs->context);
+            break;
+        default:
+            vlogE("Received unknown file control:%d from friend[%u] for file[%u]", control, friend_number, file_number);
     }
 }
 
@@ -967,6 +977,51 @@ int dht_file_send_reject(DHT *dht, uint32_t friend_number, const uint32_t file_n
     return -1;
 }
 
+int dht_file_send_pause(DHT *dht, uint32_t friend_number, const uint32_t file_number)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_CONTROL error;
+
+    rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_PAUSE, &error);
+    if(rc){
+        vlogI("Paused file.");
+        return 0;
+    }
+    vlogE("Send file control error: %i", error);
+    return -1;
+}
+
+int dht_file_send_resume(DHT *dht, uint32_t friend_number, const uint32_t file_number)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_CONTROL error;
+
+    rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error);
+    if(rc){
+        vlogI("Resumed file.");
+        return 0;
+    }
+    vlogE("Send file control error: %i", error);
+    return -1;
+}
+
+int dht_file_send_cancel(DHT *dht, uint32_t friend_number, const uint32_t file_number)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_CONTROL error;
+
+    rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, &error);
+    if(rc){
+        vlogI("Canceled file.");
+        return 0;
+    }
+    vlogE("Send file control error: %i", error);
+    return -1;
+}
+
 int dht_file_send_chunk(DHT *dht, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data, int len)
 {
     int rc;
@@ -975,7 +1030,7 @@ int dht_file_send_chunk(DHT *dht, uint32_t friend_number, uint32_t file_number, 
 
     rc = tox_file_send_chunk(tox, friend_number, file_number, position, data, len, &error);
     if(rc){
-        vlogI("Send file chunk from position %lu with length %d to friend %u", position, len, friend_number);
+        vlogD("Send file chunk from position %lu with length %d to friend %u", position, len, friend_number);
         return 0;
     }
     vlogE("Send file chunk error: %i", error);
