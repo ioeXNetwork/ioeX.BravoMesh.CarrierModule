@@ -10,7 +10,7 @@ if [ ! -e ${DEPS_DIR} ]; then
 fi
 
 if [ ! -e ${DEPS_DIR}/${PACKAGE} ]; then
-    mkdir -p ${DEPO_DIR}
+    mkdir -p ${DEPS_DIR}
     echo "git clone -b ${BRANCH} ${PACKAGE_URL} ${DEPS_DIR}/${PACKAGE}"
     git clone ${PACKAGE_URL} ${DEPS_DIR}/${PACKAGE}
 fi
