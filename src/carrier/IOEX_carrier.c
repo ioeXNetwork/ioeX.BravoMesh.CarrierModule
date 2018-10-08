@@ -3138,6 +3138,55 @@ int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *ful
     return 0;
 }
 
+int IOEX_send_file_seek(IOEXCarrier *w, const char *friendid, const char *fileindex, const char *position)
+{
+    uint32_t friend_number;
+    uint32_t temp_fileindex;
+    uint64_t start_position;
+    int rc;
+
+    if(!w || !friendid || !fileindex || !position){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+    if(!is_valid_key(friendid)){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+    temp_fileindex = strtoul(fileindex, NULL, 10);
+    if(temp_fileindex == UINT32_MAX){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+
+    if(!w->is_ready){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_READY));
+        return -1;
+    }
+    
+    rc = get_friend_number(w, friendid, &friend_number);
+    if(rc < 0){
+        IOEX_set_error(rc);
+        return -1;
+    }
+
+    if (!friends_exist(w->friends, friend_number)) {
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
+        return -1;
+    }
+
+    // TODO: check against receiver list
+
+    start_position = strtoull(position, NULL, 10);
+    rc = dht_file_send_seek(&w->dht, friend_number, temp_fileindex, start_position);    
+    if(rc < 0){
+        // TODO: rc might not be meaningful
+        IOEX_set_error(rc);
+        return -1;
+    }
+    return 0;
+}
+
 int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *fileindex, const char *filename, const char *filepath)
 {
     uint32_t friend_number;

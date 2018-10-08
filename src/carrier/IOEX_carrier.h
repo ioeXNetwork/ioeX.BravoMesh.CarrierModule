@@ -1437,6 +1437,28 @@ int IOEX_send_file_accept(IOEXCarrier *carrier, const char *friendid, const char
 
 /**
  * \~English
+ * An application-defined function that sends file seek control.
+ * This function must be called right after the file request is received, and before sending accept.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      friendid    [in] The user id from who sent the file send request.
+ * @param
+ *      fileindex   [in] The index of the file that will be sent.
+ * @param
+ *      position    [in] The start position of the file that should be sent.
+ * @return
+ *      0 if the request successfully send to the friend.
+ *      Otherwise, return -1, and a specific error code can be
+ *      retrieved by calling IOEX_get_error().
+ */
+CARRIER_API
+int IOEX_send_file_seek(IOEXCarrier *carrier, const char *friendid, const char *fileindex, 
+                        const char *position);
+
+/**
+ * \~English
  * An application-defined function that rejects a file send request.
  *
  * @param
