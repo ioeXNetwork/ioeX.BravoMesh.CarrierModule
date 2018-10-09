@@ -34,7 +34,7 @@ else
 endif
 
 PSEUDOTCP_SRCS = pseudotcp/pseudotcp.c pseudotcp/glist.c pseudotcp/gqueue.c
-SRCS = session.c crypto_handler.c reliable_handler.c multiplex_handler.c portforwarding.c fdset.c udp_eventfd.c  ice.c TSFile.c $(PSEUDOTCP_SRCS)
+SRCS = session.c crypto_handler.c reliable_handler.c multiplex_handler.c portforwarding.c fdset.c udp_eventfd.c ice.c $(PSEUDOTCP_SRCS)
 
 OBJS = $(SRCS:.c=.o)
 
@@ -43,7 +43,7 @@ LOBJS = $(SRCS:.c=.lo)
 .SUFFIXES:
 .SUFFIXES: .c .lo .o
 
-HEADERS = IOEX_session.h TSFile.h
+HEADERS = IOEX_session.h
 
 .PHONY: all clean install
 
