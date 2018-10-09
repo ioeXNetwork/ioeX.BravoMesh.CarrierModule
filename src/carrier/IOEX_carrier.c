@@ -3231,12 +3231,6 @@ int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *file
         snprintf(fullpath, sizeof(fullpath), "%s/%s", filepath, filename);
     }
 
-    // Consider this an error and do not try to overwrite the existing file
-    if(is_file_exist(fullpath)){
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_EXISTED));
-        return -1;
-    }
-
     if(!is_file_writable(fullpath)){
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_DENY));
         return -1;
