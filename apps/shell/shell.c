@@ -48,7 +48,6 @@
 
 #include <IOEX_carrier.h>
 #include <IOEX_session.h>
-#include <TSFile.h>
 #include "config.h"
 
 #define NUMBER_OF_HISTORY       256
@@ -1529,35 +1528,6 @@ static void portforwarding_close(IOEXCarrier *w, int argc, char *argv[])
 
 static void help(IOEXCarrier *w, int argc, char *argv[]);
 
-//test
-
-void tt_02(const char *FileName,const char *Real_FileName){
-	output("[tt_02], 01=%s,02=%s\n",FileName,Real_FileName);
-}
-
-static void tsinit(IOEXCarrier *w, int argc, char *argv[])
-{
-	int rc;
-
-	IOEX_TSFile_ReceivedComplete_Callback(w,tt_02);
-    rc=IOEX_TSFile_Init(w,"/home/fihtdc/SDK_test/0912/ioeX.BravoMesh.CarrierModule/apps/", NULL);
-	//rc=IOEX_TSFile_Init(w,"");
-}
-static void tsfile(IOEXCarrier *w, int argc, char *argv[])
-{
-   int rc;
-
-
-	 if (argc != 4) {
-        output("Invalid command syntax.\n");
-        return;
-    }
-
-	rc=IOEX_TSFile_Request(w,argv[1],argv[2],atoi(argv[3]), NULL);
-	output("test_01 result=%d,argv[1]=%s,argv[2]=%s,argv[3]=%d\n", rc,argv[1],argv[2],argv[3]);
-    
-}
-
 static bool get_files_callback(int direction, const IOEXFileInfo *fi, void *context)
 {
     static int count = 0;
@@ -1751,8 +1721,7 @@ struct command {
     { "spfopen",    portforwarding_open,    "spfopen stream service tcp|udp host port" },
     { "spfclose",   portforwarding_close,   "spfclose stream pfid" },
     { "scleanup",   session_cleanup,        "scleanup" },
-	{ "tsinit",     tsinit,                 "tsinit" },
-    { "tsfile",     tsfile,         	    "tsfile userid file_name 0" },
+
     { "filesend",   file_send_request, 	    "filesend userid filename" },
     { "fileseek",   file_send_seek, 	    "fileseek userid fileindex position" },
     { "fileaccept", file_send_accept, 	    "fileaccept userid fileindex newfilename filepath" },
