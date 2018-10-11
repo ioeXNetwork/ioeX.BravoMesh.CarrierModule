@@ -332,6 +332,38 @@ typedef enum IOEXPresenceStatus {
 
 /**
  * \~English
+ * Status of an ongoing file transmission.
+ */
+typedef enum IOEXFileTransmissionStatus {
+    /**
+     * \~English
+     * Sender is waiting receiver's response.
+     */
+    IOEXFileTransmissionStatus_Waiting,
+    /**
+     * \~English
+     * File is transmitting.
+     */
+    IOEXFileTransmissionStatus_Transmitting,
+    /**
+     * \~English
+     * Transmission is paused by our side.
+     */
+    IOEXFileTransmissionStatus_PauseUs,
+    /**
+     * \~English
+     * Transmission is paused by another peer.
+     */
+    IOEXFileTransmissionStatus_PauseOther,
+    /**
+     * \~English
+     * Transmission is paused by both peers.
+     */
+    IOEXFileTransmissionStatus_PauseBoth,
+} IOEXFileTransmissionStatus;
+
+/**
+ * \~English
  * A structure representing the Carrier user information.
  *
  * In Carrier SDK, self and all friends are carrier user, and have
@@ -415,6 +447,7 @@ typedef struct IOEXFileInfo {
     char file_path[IOEX_MAX_FILE_PATH_LEN+1];
     uint32_t friend_number;
     uint32_t file_index;
+    IOEXFileTransmissionStatus status;
 } IOEXFileInfo;
 
 /**
@@ -1824,6 +1857,12 @@ int IOEX_get_files(IOEXCarrier *carrier, IOEXFilesIterateCallback *callback, voi
  * File already existed.
  */
 #define IOEXERR_FILE_EXISTED                         0x28
+
+/**
+ * \~English
+ * File tracker is invalid.
+ */
+#define IOEXERR_FILE_TRACKER_INVALID                 0x29
 
 /**
  * \~English
