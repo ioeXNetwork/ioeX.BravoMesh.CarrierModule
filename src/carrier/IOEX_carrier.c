@@ -1945,12 +1945,19 @@ void notify_file_chunk_request_cb(const uint32_t friend_number, const uint32_t f
             int len = fread(data, 1, length, fp);
             rc = dht_file_send_chunk(&w->dht, friend_number, file_number, position, data, len);
             fclose(fp);
-            if(rc==0 && w->callbacks.file_chunk_send){
+            if(rc < 0 && w->callbacks.file_chunk_send_error){
+                w->callbacks.file_chunk_send_error(w, rc, tmpid, file_number, fullpath, position, length, w->context);
+            }
+            else if( w->callbacks.file_chunk_send){
                 w->callbacks.file_chunk_send(w, tmpid, file_number, fullpath, position, length, w->context);
             }
         }
         else {
             vlogE("Cannot respond to the file[%s] chunk request", fullpath);
+            if(w->callbacks.file_chunk_send_error){
+                w->callbacks.file_chunk_send_error(w, IOEX_GENERAL_ERROR(IOEXERR_FILE_INVALID), tmpid, file_number,
+                                                   fullpath, position, length, w->context);
+            }
         }
     }
 }

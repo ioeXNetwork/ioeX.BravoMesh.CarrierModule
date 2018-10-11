@@ -420,6 +420,40 @@ static inline int __dht_file_control_error(TOX_ERR_FILE_CONTROL code)
     return rc;
 }
 
+static inline int __dht_file_send_chunk_error(TOX_ERR_FILE_SEND_CHUNK code)
+{
+    int rc;
+    switch(code) {
+    case TOX_ERR_FILE_SEND_CHUNK_OK:
+        rc = IOEXSUCCESS;
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_NULL:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_INVALID);
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_FRIEND_NOT_CONNECTED:
+        rc = IOEX_DHT_ERROR(IOEXERR_FRIEND_OFFLINE);
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_NOT_FOUND:
+    case TOX_ERR_FILE_SEND_CHUNK_INVALID_LENGTH:
+    case TOX_ERR_FILE_SEND_CHUNK_WRONG_POSITION:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_INVALID);
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_NOT_TRANSFERRING:
+        rc = IOEX_DHT_ERROR(IOEXERR_WRONG_STATE);
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_SENDQ:
+        rc = IOEX_DHT_ERROR(IOEXERR_LIMIT_EXCEEDED);
+        break;
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
 static bool is_connected(TOX_CONNECTION connection)
 {
     bool is_connected;
@@ -1160,8 +1194,9 @@ int dht_file_send_chunk(DHT *dht, uint32_t friend_number, uint32_t file_number, 
     rc = tox_file_send_chunk(tox, friend_number, file_number, position, data, len, &error);
     if(rc){
         vlogD("Send file chunk from position %lu with length %d to friend %u", position, len, friend_number);
-        return 0;
     }
-    vlogE("Send file chunk error: %i", error);
-    return -1;
+    else{
+        vlogE("Send file chunk error: %i", error);
+    }
+    return __dht_file_send_chunk_error(error);
 }
