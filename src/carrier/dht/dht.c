@@ -380,7 +380,38 @@ static inline int __dht_file_seek_error(TOX_ERR_FILE_SEEK code)
         rc = IOEX_DHT_ERROR(IOEXERR_WRONG_STATE);
         break;
     case TOX_ERR_FILE_SEEK_SENDQ:
-        rc = IOEX_DHT_ERROR(IOEXERR_OUT_OF_MEMORY);
+        rc = IOEX_DHT_ERROR(IOEXERR_LIMIT_EXCEEDED);
+        break;
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
+static inline int __dht_file_control_error(TOX_ERR_FILE_CONTROL code)
+{
+    int rc;
+    switch(code) {
+    case TOX_ERR_FILE_CONTROL_OK:
+        rc = IOEXSUCCESS;
+        break;
+    case TOX_ERR_FILE_CONTROL_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+    case TOX_ERR_FILE_CONTROL_FRIEND_NOT_CONNECTED:
+        rc = IOEX_DHT_ERROR(IOEXERR_FRIEND_OFFLINE);
+        break;
+    case TOX_ERR_FILE_CONTROL_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_INVALID);
+        break;
+    case TOX_ERR_FILE_CONTROL_NOT_PAUSED:
+    case TOX_ERR_FILE_CONTROL_DENIED:
+    case TOX_ERR_FILE_CONTROL_ALREADY_PAUSED:
+        rc = IOEX_DHT_ERROR(IOEXERR_WRONG_STATE);
+        break;
+    case TOX_ERR_FILE_CONTROL_SENDQ:
+        rc = IOEX_DHT_ERROR(IOEXERR_LIMIT_EXCEEDED);
         break;
     default:
         rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
@@ -1009,7 +1040,7 @@ int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath
 
     *filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename, 
                              strlen(filename), &error);
-    if(filenum != UINT32_MAX){
+    if(filenum != UINT32_MAX) {
         vlogI("Sent file send request.");
     }
     else {
@@ -1026,12 +1057,14 @@ int dht_file_send_accept(DHT *dht, uint32_t friend_number, const uint32_t file_n
     TOX_ERR_FILE_CONTROL error;
 
     rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error);
-    if(rc){
+    if(rc) {
         vlogI("Accepted file.");
-        return 0;
     }
-    vlogE("Send file control error: %i", error);
-    return -1;
+    else {
+        vlogE("Send file control error: %i", error);
+    }
+
+    return __dht_file_control_error(error);
 }
 
 int dht_file_send_seek(DHT *dht, uint32_t friend_number, const uint32_t file_number, uint64_t position)

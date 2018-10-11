@@ -3173,7 +3173,8 @@ int IOEX_send_file_seek(IOEXCarrier *w, const char *friendid, const char *filein
 int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *fileindex, const char *filename, const char *filepath)
 {
     uint32_t friend_number;
-    uint32_t temp_fileindex;
+    uint32_t file_number;
+    char fullpath[IOEX_MAX_FULL_PATH_LEN + 1];
     int rc;
 
     if(!w || !friendid || !fileindex || !filename || !filepath){
@@ -3184,12 +3185,6 @@ int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *file
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
-    temp_fileindex = strtoul(fileindex, NULL, 10);
-    if(temp_fileindex == UINT32_MAX){
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
-        return -1;
-    }
-
     if(!w->is_ready){
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_READY));
         return -1;
@@ -3201,12 +3196,6 @@ int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *file
         return -1;
     }
 
-    if (!friends_exist(w->friends, friend_number)) {
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
-        return -1;
-    }
-
-    char fullpath[IOEX_MAX_FULL_PATH_LEN + 1];
     if(filepath[strlen(filepath)-1]=='/'){
         snprintf(fullpath, sizeof(fullpath), "%s%s", filepath, filename);
     }
@@ -3219,6 +3208,7 @@ int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *file
         return -1;
     }
 
+    file_number = strtoul(fileindex, NULL, 10);
     ListIterator it;
     list_iterate(w->file_receivers, &it);
     while(list_iterator_has_next(&it)) {
@@ -3233,7 +3223,7 @@ int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *file
         }
 
         IOEXFileInfo *info = &receiver->fi;
-        if(info->friend_number == friend_number && info->file_index == temp_fileindex){
+        if(info->friend_number == friend_number && info->file_index == file_number){
             strncpy(info->file_name, filename, IOEX_MAX_FILE_NAME_LEN);
             strncpy(info->file_path, filepath, IOEX_MAX_FILE_PATH_LEN);
             deref(receiver);
@@ -3243,9 +3233,8 @@ int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *file
         deref(receiver);
     }
 
-    rc = dht_file_send_accept(&w->dht, friend_number, temp_fileindex);
+    rc = dht_file_send_accept(&w->dht, friend_number, file_number);
     if(rc < 0){
-        // TODO: rc might not be meaningful
         IOEX_set_error(rc);
         return -1;
     }
