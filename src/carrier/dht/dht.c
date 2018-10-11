@@ -359,6 +359,36 @@ static inline int __dht_file_send_error(TOX_ERR_FILE_SEND code)
     return rc;
 }
 
+static inline int __dht_file_seek_error(TOX_ERR_FILE_SEEK code)
+{
+    int rc;
+    switch (code) {
+    case TOX_ERR_FILE_SEEK_OK:
+        rc = IOEXSUCCESS;
+        break;
+    case TOX_ERR_FILE_SEEK_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+    case TOX_ERR_FILE_SEEK_FRIEND_NOT_CONNECTED:
+        rc = IOEX_DHT_ERROR(IOEXERR_FRIEND_OFFLINE);
+        break;
+    case TOX_ERR_FILE_SEEK_NOT_FOUND:
+    case TOX_ERR_FILE_SEEK_INVALID_POSITION:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_INVALID);
+        break;
+    case TOX_ERR_FILE_SEEK_DENIED:
+        rc = IOEX_DHT_ERROR(IOEXERR_WRONG_STATE);
+        break;
+    case TOX_ERR_FILE_SEEK_SENDQ:
+        rc = IOEX_DHT_ERROR(IOEXERR_OUT_OF_MEMORY);
+        break;
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
 static bool is_connected(TOX_CONNECTION connection)
 {
     bool is_connected;
@@ -979,6 +1009,12 @@ int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath
 
     *filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename, 
                              strlen(filename), &error);
+    if(filenum != UINT32_MAX){
+        vlogI("Sent file send request.");
+    }
+    else {
+        vlogE("Sent file send request error: %i", error);
+    }
 
     return __dht_file_send_error(error);
 }
@@ -1002,15 +1038,17 @@ int dht_file_send_seek(DHT *dht, uint32_t friend_number, const uint32_t file_num
 {
     int rc;
     Tox *tox = dht->tox;
-    TOX_ERR_FILE_CONTROL error;
+    TOX_ERR_FILE_SEEK error;
 
     rc = tox_file_seek(tox, friend_number, file_number, position, &error);
-    if(rc){
+    if(rc) {
         vlogI("Sent seek request.");
-        return 0;
     }
-    vlogE("Send file seek error: %i", error);
-    return -1;
+    else { 
+        vlogE("Send file seek error: %i", error);
+    }
+
+    return __dht_file_seek_error(error);
 }
 
 int dht_file_send_reject(DHT *dht, uint32_t friend_number, const uint32_t file_number)
