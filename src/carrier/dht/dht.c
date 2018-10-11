@@ -327,6 +327,38 @@ static inline int __dht_friend_delete_error(TOX_ERR_FRIEND_DELETE code)
     return rc;
 }
 
+static inline int __dht_file_send_error(TOX_ERR_FILE_SEND code)
+{
+    int rc;
+    switch (code) {
+    case TOX_ERR_FILE_SEND_OK:
+        rc = IOEXSUCCESS;
+        break;
+
+    case TOX_ERR_FILE_SEND_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+
+    case TOX_ERR_FILE_SEND_FRIEND_NOT_CONNECTED:
+        rc = IOEX_DHT_ERROR(IOEXERR_FRIEND_OFFLINE);
+        break;
+
+    case TOX_ERR_FILE_SEND_NULL:
+    case TOX_ERR_FILE_SEND_NAME_TOO_LONG:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_INVALID);
+        break;
+
+    case TOX_ERR_FILE_SEND_TOO_MANY:
+        rc = IOEX_DHT_ERROR(IOEXERR_LIMIT_EXCEEDED);
+        break;
+
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
 static bool is_connected(TOX_CONNECTION connection)
 {
     bool is_connected;
@@ -920,19 +952,23 @@ int dht_get_random_tcp_relay(DHT *dht, char *tcp_relay, size_t buflen,
     return 0;
 }
 
-int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath)
+int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath, uint32_t *filenum)
 {
     Tox *tox = dht->tox;
-    FILE *tempfile = fopen(fullpath, "rb");
-    char filename[512];
+    char filename[IOEX_MAX_FILE_NAME_LEN + 1];
+    uint32_t temp_filenum;
+    TOX_ERR_FILE_SEND error;
 
+    // Get file size
+    FILE *tempfile = fopen(fullpath, "rb");
     if(tempfile == NULL){
-        return -1;
+        return IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST);
     }
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
-    fseek(tempfile, 0, SEEK_SET);
+    fclose(tempfile);
 
+    // Parse file name from fullpath
     char *pch = strrchr(fullpath, '/');
     if(pch == NULL){
         strncpy(filename, fullpath, sizeof(filename));
@@ -940,11 +976,11 @@ int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath
     else{
         strncpy(filename, pch+1, sizeof(filename));
     }
-    uint32_t filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename, 
-                                     strlen(filename), 0);
-    fclose(tempfile);
 
-    return filenum;
+    *filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename, 
+                             strlen(filename), &error);
+
+    return __dht_file_send_error(error);
 }
 
 int dht_file_send_accept(DHT *dht, uint32_t friend_number, const uint32_t file_number)
