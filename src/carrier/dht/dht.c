@@ -1093,10 +1093,12 @@ int dht_file_send_reject(DHT *dht, uint32_t friend_number, const uint32_t file_n
     rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, &error);
     if(rc){
         vlogI("Rejected file.");
-        return 0;
     }
-    vlogE("Send file control error: %i", error);
-    return -1;
+    else{
+        vlogE("Send file reject error: %i", error);
+    }
+
+    return __dht_file_control_error(error);
 }
 
 int dht_file_send_pause(DHT *dht, uint32_t friend_number, const uint32_t file_number)
@@ -1108,10 +1110,12 @@ int dht_file_send_pause(DHT *dht, uint32_t friend_number, const uint32_t file_nu
     rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_PAUSE, &error);
     if(rc){
         vlogI("Paused file.");
-        return 0;
     }
-    vlogE("Send file control error: %i", error);
-    return -1;
+    else{
+        vlogE("Send file pause error: %i", error);
+    }
+
+    return __dht_file_control_error(error);
 }
 
 int dht_file_send_resume(DHT *dht, uint32_t friend_number, const uint32_t file_number)
@@ -1123,10 +1127,12 @@ int dht_file_send_resume(DHT *dht, uint32_t friend_number, const uint32_t file_n
     rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error);
     if(rc){
         vlogI("Resumed file.");
-        return 0;
     }
-    vlogE("Send file control error: %i", error);
-    return -1;
+    else {
+        vlogE("Send file resume error: %i", error);
+    }
+
+    return __dht_file_control_error(error);
 }
 
 int dht_file_send_cancel(DHT *dht, uint32_t friend_number, const uint32_t file_number)
@@ -1138,10 +1144,11 @@ int dht_file_send_cancel(DHT *dht, uint32_t friend_number, const uint32_t file_n
     rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, &error);
     if(rc){
         vlogI("Canceled file.");
-        return 0;
     }
-    vlogE("Send file control error: %i", error);
-    return -1;
+    else {
+        vlogE("Send file cancel error: %i", error);
+    }
+    return __dht_file_control_error(error);
 }
 
 int dht_file_send_chunk(DHT *dht, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data, int len)

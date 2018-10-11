@@ -3245,7 +3245,7 @@ int IOEX_send_file_accept(IOEXCarrier *w, const char *friendid, const char *file
 int IOEX_send_file_reject(IOEXCarrier *w, const char *friendid, const char *fileindex)
 {
     uint32_t friend_number;
-    uint32_t temp_fileindex;
+    uint32_t file_number;
     int rc;
 
     if(!w || !friendid || !fileindex){
@@ -3256,12 +3256,6 @@ int IOEX_send_file_reject(IOEXCarrier *w, const char *friendid, const char *file
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
-    temp_fileindex = strtoul(fileindex, NULL, 10);
-    if(temp_fileindex == UINT32_MAX){
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
-        return -1;
-    }
-
     if(!w->is_ready){
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_READY));
         return -1;
@@ -3273,19 +3267,15 @@ int IOEX_send_file_reject(IOEXCarrier *w, const char *friendid, const char *file
         return -1;
     }
 
-    if (!friends_exist(w->friends, friend_number)) {
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
-        return -1;
-    }
+    file_number = strtoul(fileindex, NULL, 10);
 
     FileTracker *receiver = NULL;
-    if((receiver = find_file_receiver(w, friend_number, temp_fileindex))!=NULL){
+    if((receiver = find_file_receiver(w, friend_number, file_number))!=NULL){
         remove_file_receiver(w, receiver);
     }
 
-    rc = dht_file_send_reject(&w->dht, friend_number, temp_fileindex);
+    rc = dht_file_send_reject(&w->dht, friend_number, file_number);
     if(rc < 0){
-        // TODO: rc might not be meaningful
         IOEX_set_error(rc);
         return -1;
     }
@@ -3296,7 +3286,7 @@ int IOEX_send_file_reject(IOEXCarrier *w, const char *friendid, const char *file
 int IOEX_send_file_pause(IOEXCarrier *w, const char *friendid, const char *fileindex)
 {
     uint32_t friend_number;
-    uint32_t temp_fileindex;
+    uint32_t file_number;
     int rc;
 
     if(!w || !friendid || !fileindex){
@@ -3307,12 +3297,6 @@ int IOEX_send_file_pause(IOEXCarrier *w, const char *friendid, const char *filei
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
-    temp_fileindex = strtoul(fileindex, NULL, 10);
-    if(temp_fileindex == UINT32_MAX){
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
-        return -1;
-    }
-
     if(!w->is_ready){
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_READY));
         return -1;
@@ -3324,20 +3308,15 @@ int IOEX_send_file_pause(IOEXCarrier *w, const char *friendid, const char *filei
         return -1;
     }
 
-    if (!friends_exist(w->friends, friend_number)) {
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
-        return -1;
-    }
-
     // TODO: pause the coresponding sender or receiver
     //FileTracker *receiver = NULL;
-    //if((receiver = find_file_receiver(w, friend_number, temp_fileindex))!=NULL){
+    //if((receiver = find_file_receiver(w, friend_number, file_number))!=NULL){
     //    pause_file_receiver(w, receiver);
     //}
 
-    rc = dht_file_send_pause(&w->dht, friend_number, temp_fileindex);
+    file_number = strtoul(fileindex, NULL, 10);
+    rc = dht_file_send_pause(&w->dht, friend_number, file_number);
     if(rc < 0){
-        // TODO: rc might not be meaningful
         IOEX_set_error(rc);
         return -1;
     }
@@ -3348,7 +3327,7 @@ int IOEX_send_file_pause(IOEXCarrier *w, const char *friendid, const char *filei
 int IOEX_send_file_resume(IOEXCarrier *w, const char *friendid, const char *fileindex)
 {
     uint32_t friend_number;
-    uint32_t temp_fileindex;
+    uint32_t file_number;
     int rc;
 
     if(!w || !friendid || !fileindex){
@@ -3359,12 +3338,6 @@ int IOEX_send_file_resume(IOEXCarrier *w, const char *friendid, const char *file
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
-    temp_fileindex = strtoul(fileindex, NULL, 10);
-    if(temp_fileindex == UINT32_MAX){
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
-        return -1;
-    }
-
     if(!w->is_ready){
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_READY));
         return -1;
@@ -3376,20 +3349,15 @@ int IOEX_send_file_resume(IOEXCarrier *w, const char *friendid, const char *file
         return -1;
     }
 
-    if (!friends_exist(w->friends, friend_number)) {
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
-        return -1;
-    }
-
     // TODO: resume the coresponding sender or receiver
     //FileTracker *receiver = NULL;
-    //if((receiver = find_file_receiver(w, friend_number, temp_fileindex))!=NULL){
+    //if((receiver = find_file_receiver(w, friend_number, file_number))!=NULL){
     //    resume_file_receiver(w, receiver);
     //}
 
-    rc = dht_file_send_resume(&w->dht, friend_number, temp_fileindex);
+    file_number = strtoul(fileindex, NULL, 10);
+    rc = dht_file_send_resume(&w->dht, friend_number, file_number);
     if(rc < 0){
-        // TODO: rc might not be meaningful
         IOEX_set_error(rc);
         return -1;
     }
@@ -3400,7 +3368,7 @@ int IOEX_send_file_resume(IOEXCarrier *w, const char *friendid, const char *file
 int IOEX_send_file_cancel(IOEXCarrier *w, const char *friendid, const char *fileindex)
 {
     uint32_t friend_number;
-    uint32_t temp_fileindex;
+    uint32_t file_number;
     int rc;
 
     if(!w || !friendid || !fileindex){
@@ -3411,12 +3379,6 @@ int IOEX_send_file_cancel(IOEXCarrier *w, const char *friendid, const char *file
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
-    temp_fileindex = strtoul(fileindex, NULL, 10);
-    if(temp_fileindex == UINT32_MAX){
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
-        return -1;
-    }
-
     if(!w->is_ready){
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_READY));
         return -1;
@@ -3428,20 +3390,15 @@ int IOEX_send_file_cancel(IOEXCarrier *w, const char *friendid, const char *file
         return -1;
     }
 
-    if (!friends_exist(w->friends, friend_number)) {
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
-        return -1;
-    }
-
     // TODO: Remove the correct tracker, sender or receiver
     //FileTracker *receiver = NULL;
-    //if((receiver = find_file_receiver(w, friend_number, temp_fileindex))!=NULL){
+    //if((receiver = find_file_receiver(w, friend_number, file_number))!=NULL){
     //    remove_file_receiver(w, receiver);
     //}
 
-    rc = dht_file_send_reject(&w->dht, friend_number, temp_fileindex);
+    file_number = strtoul(fileindex, NULL, 10);
+    rc = dht_file_send_reject(&w->dht, friend_number, file_number);
     if(rc < 0){
-        // TODO: rc might not be meaningful
         IOEX_set_error(rc);
         return -1;
     }
