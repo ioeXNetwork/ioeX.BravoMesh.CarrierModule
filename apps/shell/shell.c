@@ -1534,11 +1534,11 @@ static bool get_files_callback(int direction, const IOEXFileInfo *fi, void *cont
     if(fi != NULL){
         if (direction == 0) {
             count++;
-            output("Send: [%u]%s to friend: %u\n", fi->file_index, fi->file_name, fi->friend_number);
+            output("Send: [%u]%s(%d) to friend: %u\n", fi->file_index, fi->file_name, fi->status, fi->friend_number);
         }
         else{
             count++;
-            output("Receive: [%u]%s to friend: %u\n", fi->file_index, fi->file_name, fi->friend_number);
+            output("Receive: [%u]%s(%d) from friend: %u\n", fi->file_index, fi->file_name, fi->status, fi->friend_number);
         }
     }
     else{
@@ -2189,9 +2189,9 @@ int main(int argc, char *argv[])
     callbacks.file_paused = file_paused_callback;
     callbacks.file_resumed = file_resumed_callback;
     callbacks.file_canceled = file_canceled_callback;
-    callbacks.file_chunk_send = file_chunk_send_callback;
-    callbacks.file_chunk_send_error = file_chunk_send_error_callback;
-    callbacks.file_chunk_receive = file_chunk_receive_callback;
+    //callbacks.file_chunk_send = file_chunk_send_callback;
+    //callbacks.file_chunk_send_error = file_chunk_send_error_callback;
+    //callbacks.file_chunk_receive = file_chunk_receive_callback;
 
     w = IOEX_new(&opts, &callbacks, NULL);
     deref(cfg);
