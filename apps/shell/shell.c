@@ -2032,6 +2032,14 @@ static void file_chunk_send_callback(IOEXCarrier *w, const char *friendid, const
     output("From position: %u and length: %u\n", position, length);
 }
 
+static void file_chunk_send_error_callback(IOEXCarrier *w, int errcode, const char *friendid, const uint32_t fileindex, const char *filename,
+                                     const uint64_t position, const size_t length, void *context)
+{
+    output("Failed to sent a file chunk of file[%s] index:%u to friend[%s]\n", filename, fileindex, friendid);
+    output("From position: %u and length: %u\n", position, length);
+    output("Error code: 0x%08x\n", errcode);
+}
+
 static void file_chunk_receive_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
                                         const uint64_t position, const size_t length, void *context)
 {
@@ -2182,6 +2190,7 @@ int main(int argc, char *argv[])
     callbacks.file_resumed = file_resumed_callback;
     callbacks.file_canceled = file_canceled_callback;
     callbacks.file_chunk_send = file_chunk_send_callback;
+    callbacks.file_chunk_send_error = file_chunk_send_error_callback;
     callbacks.file_chunk_receive = file_chunk_receive_callback;
 
     w = IOEX_new(&opts, &callbacks, NULL);
