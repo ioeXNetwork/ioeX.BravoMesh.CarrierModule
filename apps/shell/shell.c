@@ -1572,7 +1572,7 @@ static void file_send_request(IOEXCarrier *w, int argc, char *argv[])
 
     rc = IOEX_send_file_request(w, argv[1], argv[2]);
     if(rc < 0){
-        output("Invalid request.\n");
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
     }
     else{
         output("File request sent.\n");
