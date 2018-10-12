@@ -1685,13 +1685,15 @@ void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
     IOEXcp_free(cp);
 }
 
-bool get_fullpath(const FileTracker *ft, const char *fullpath)
+bool get_fullpath(const FileTracker *ft, char *fullpath)
 {
+    const IOEXFileInfo *info;
+
     if(!ft || !fullpath){
         return false;
     }
 
-    IOEXFileInfo *info = &ft->fi;
+    info = &(ft->fi);
     if(info->file_path == NULL || strlen(info->file_path) == 0){
         snprintf(fullpath, IOEX_MAX_FULL_PATH_LEN, "%s", info->file_name);
     }
@@ -1814,15 +1816,16 @@ int update_file_receiver_path(FileTracker *receiver, const char *filename, const
     IOEXFileInfo *info = &receiver->fi;
     strncpy(info->file_name, filename, IOEX_MAX_FILE_NAME_LEN);
     strncpy(info->file_path, filepath, IOEX_MAX_FILE_PATH_LEN);
+
+    return IOEXSUCCESS;
 }
 
 static 
-void notify_file_request_cb(const uint32_t friend_number, const uint32_t file_number, 
-                            const uint8_t *filename, const uint64_t filesize, void *context)
+void notify_file_request_cb(uint32_t friend_number, uint32_t file_number, 
+                            const uint8_t *filename, uint64_t filesize, void *context)
 {
     IOEXCarrier *w = (IOEXCarrier *)context;
     FriendInfo *fi;
-    char tmpid[IOEX_MAX_ID_LEN + 1];
     int rc;
 
     assert(friend_number != UINT32_MAX);
@@ -1835,7 +1838,7 @@ void notify_file_request_cb(const uint32_t friend_number, const uint32_t file_nu
         return;
     }
 
-    rc = add_new_file_receiver(w, friend_number, file_number, filename);
+    rc = add_new_file_receiver(w, friend_number, file_number, (char *)filename);
     if(rc < 0){
         IOEX_set_error(rc);
         vlogE("Carrier: cannot add file receiver for friend_number:%u, file_number:%u (0x%08X)", friend_number, file_number, rc);
@@ -1843,7 +1846,7 @@ void notify_file_request_cb(const uint32_t friend_number, const uint32_t file_nu
     }
 
     if(w->callbacks.file_request){
-        w->callbacks.file_request(w, fi->info.user_info.userid, file_number, filename, filesize, w->context);
+        w->callbacks.file_request(w, fi->info.user_info.userid, file_number, (char *)filename, filesize, w->context);
     }
 }
 
@@ -1853,7 +1856,6 @@ void notify_file_accepted_cb(const uint32_t friend_number, const uint32_t file_n
 {
     IOEXCarrier *w = (IOEXCarrier *)context;
     FriendInfo *fi;
-    int rc;
 
     assert(friend_number != UINT32_MAX);
 
@@ -1865,8 +1867,8 @@ void notify_file_accepted_cb(const uint32_t friend_number, const uint32_t file_n
     }
 
     if(!find_file_sender(w, friend_number, file_number)){
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
-        vlogE("Carrier: cannot find file sender for friend_number:%u file_number:%u (0x%08X)", friend_number, file_number, rc);
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID));
+        vlogE("Carrier: cannot find file sender for friend_number:%u file_number:%u", friend_number, file_number);
         return;
     }
 
@@ -1893,7 +1895,7 @@ void notify_file_rejected_cb(const uint32_t friend_number, const uint32_t file_n
 
     FileTracker *sender = NULL;
     if((sender = find_file_sender(w, friend_number, file_number))==NULL){
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID));
         vlogE("Carrier: Cannot remove file sender with friend_number:%u file_number:%u", friend_number, file_number);
         return;
     }
@@ -1910,7 +1912,6 @@ void notify_file_paused_cb(const uint32_t friend_number, const uint32_t file_num
 {
     IOEXCarrier *w = (IOEXCarrier *)context;
     FriendInfo *fi;
-    int rc;
 
     assert(friend_number != UINT32_MAX);
 
@@ -1929,8 +1930,8 @@ void notify_file_paused_cb(const uint32_t friend_number, const uint32_t file_num
         tracker = find_file_receiver(w, friend_number, file_number);
     }
     if(tracker == NULL){
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
-        vlogE("Carrier: cannot find file tracker for friend_number:%u file_number:%u (0x%08X)", friend_number, file_number, rc);
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID));
+        vlogE("Carrier: cannot find file tracker for friend_number:%u file_number:%u", friend_number, file_number);
         return;
     }
 
@@ -1945,7 +1946,6 @@ void notify_file_resumed_cb(const uint32_t friend_number, const uint32_t file_nu
 {
     IOEXCarrier *w = (IOEXCarrier *)context;
     FriendInfo *fi;
-    int rc;
 
     assert(friend_number != UINT32_MAX);
 
@@ -1964,8 +1964,8 @@ void notify_file_resumed_cb(const uint32_t friend_number, const uint32_t file_nu
         tracker = find_file_receiver(w, friend_number, file_number);
     }
     if(tracker == NULL){
-        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
-        vlogE("Carrier: cannot find file tracker for friend_number:%u file_number:%u (0x%08X)", friend_number, file_number, rc);
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID));
+        vlogE("Carrier: cannot find file tracker for friend_number:%u file_number:%u", friend_number, file_number);
         return;
     }
 
@@ -1999,7 +1999,7 @@ void notify_file_canceled_cb(const uint32_t friend_number, const uint32_t file_n
     else {
         // Receiver side should remove the partially completed file
         tracker = find_file_receiver(w, friend_number, file_number);
-        if(get_fullpath(tracker, &fullpath)){
+        if(get_fullpath(tracker, fullpath)){
             unlink(fullpath);
         }
         remove_file_receiver(w, tracker);
@@ -2046,7 +2046,7 @@ void notify_file_chunk_request_cb(const uint32_t friend_number, const uint32_t f
     if(length > 0){
         if(fp != NULL){
             fseek(fp, position, SEEK_SET);
-            char data[4096];
+            uint8_t data[4096];
             int len = fread(data, 1, length, fp);
             rc = dht_file_send_chunk(&w->dht, friend_number, file_number, position, data, len);
             fclose(fp);
@@ -2074,7 +2074,6 @@ void notify_file_chunk_receive_cb(uint32_t friend_number, uint32_t file_number, 
     IOEXCarrier *w = (IOEXCarrier *)context;
     FriendInfo *fi;
     char tmpid[IOEX_MAX_ID_LEN + 1];
-    int rc;
 
     assert(friend_number != UINT32_MAX);
 
