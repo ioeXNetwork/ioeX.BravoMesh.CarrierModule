@@ -3495,11 +3495,16 @@ int IOEX_send_file_cancel(IOEXCarrier *w, const char *friendid, const char *file
         remove_file_sender(w, tracker);
     }
     else {
+        // Remove the file if we are receiver side
+        char fullpath[IOEX_MAX_FULL_PATH_LEN + 1];
         tracker = find_file_receiver(w, friend_number, file_number);
+        if(get_fullpath(tracker, fullpath)){
+            unlink(fullpath);
+        }
         remove_file_receiver(w, tracker);
     }
 
-    rc = dht_file_send_reject(&w->dht, friend_number, file_number);
+    rc = dht_file_send_cancel(&w->dht, friend_number, file_number);
     if(rc < 0){
         IOEX_set_error(rc);
         return -1;
