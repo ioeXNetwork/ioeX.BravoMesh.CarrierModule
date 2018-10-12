@@ -2022,7 +2022,7 @@ static void file_resumed_callback(IOEXCarrier *w, const char *friendid, const ui
 
 static void file_canceled_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
 {
-    output("Friend[%s] has canceled file request [index:%u]\n", friendid, fileindex);
+    output("Friend[%s] has canceled file transmission [index:%u]\n", friendid, fileindex);
 }
 
 static void file_chunk_send_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,

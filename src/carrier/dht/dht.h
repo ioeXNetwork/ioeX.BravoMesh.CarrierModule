@@ -93,4 +93,21 @@ int dht_friend_delete(DHT *dht, uint32_t friend_number);
 int dht_get_random_tcp_relay(DHT *dht, char *tcp_relay, size_t buflen,
                              uint8_t *public_key);
 
+int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath,
+                          uint32_t *filenum);
+
+int dht_file_send_accept(DHT *dht, uint32_t friend_number, const uint32_t file_number);
+
+int dht_file_send_seek(DHT *dht, uint32_t friend_number, const uint32_t file_number, uint64_t position);
+
+int dht_file_send_reject(DHT *dht, uint32_t friend_number, const uint32_t file_number);
+
+int dht_file_send_pause(DHT *dht, uint32_t friend_number, const uint32_t file_number);
+
+int dht_file_send_resume(DHT *dht, uint32_t friend_number, const uint32_t file_number);
+
+int dht_file_send_cancel(DHT *dht, uint32_t friend_number, const uint32_t file_number);
+
+int dht_file_send_chunk(DHT *dht, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data, int len);
+
 #endif // __DHT_WRAPPER_H__

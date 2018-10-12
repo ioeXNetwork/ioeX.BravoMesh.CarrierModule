@@ -1051,13 +1051,12 @@ int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath
 {
     Tox *tox = dht->tox;
     char filename[IOEX_MAX_FILE_NAME_LEN + 1];
-    uint32_t temp_filenum;
     TOX_ERR_FILE_SEND error;
 
     // Get file size
     FILE *tempfile = fopen(fullpath, "rb");
     if(tempfile == NULL){
-        return IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST);
+        return IOEX_GENERAL_ERROR(IOEXERR_FILE_INVALID);
     }
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
@@ -1074,7 +1073,7 @@ int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath
 
     *filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename, 
                              strlen(filename), &error);
-    if(filenum != UINT32_MAX) {
+    if(*filenum != UINT32_MAX) {
         vlogI("Sent file send request.");
     }
     else {
