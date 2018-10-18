@@ -2095,7 +2095,12 @@ void notify_file_chunk_receive_cb(uint32_t friend_number, uint32_t file_number, 
             remove_file_receiver(w, receiver);
         }
         else if(get_fullpath(receiver, fullpath)){
-            fp = fopen(fullpath, "ab");
+            if(position == 0){
+                fp = fopen(fullpath, "wb");
+            }
+            else{
+                fp = fopen(fullpath, "ab");
+            }
         }
     }
 
