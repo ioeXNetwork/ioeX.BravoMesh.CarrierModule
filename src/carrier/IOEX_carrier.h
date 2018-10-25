@@ -637,6 +637,8 @@ typedef struct IOEXCallbacks {
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
      * @param
+     *      fileid      [in] The unique id for this file transmission.
+     * @param
      *      friendid    [in] The user id from who send the file send request.
      * @param
      *      fileindex   [in] The index of the file send by the friend.
@@ -647,7 +649,7 @@ typedef struct IOEXCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*file_request)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex,
+    void (*file_request)(IOEXCarrier *carrier, const char *fileid, const char *friendid, const uint32_t fileindex,
                          const char *filename, uint64_t filesize, void *context);
 
     /**

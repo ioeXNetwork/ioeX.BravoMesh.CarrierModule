@@ -1991,14 +1991,14 @@ static void invite_request_callback(IOEXCarrier *w, const char *from,
     output("  ireply %s refuse [reason]\n", from);
 }
 
-static void file_request_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename, 
+static void file_request_callback(IOEXCarrier *w, const char *fileid, const char *friendid, const uint32_t fileindex, const char *filename, 
                                   const uint64_t filesize, void *context)
 {
     output("Send file request from friend[%s]\n", friendid);
-    output("File index %u name [%s] with size %u\n", fileindex, filename, filesize);
+    output("File id %s name [%s] with size %u\n", fileid, filename, filesize);
     output("Reply use following commands:\n");
-    output("  fileaccept %s %u <new file name> <file path>\n", friendid, fileindex);
-    output("  filereject %s %u\n", friendid, fileindex);
+    output("  fileaccept %s <new file name> <file path>\n", fileid);
+    output("  filereject %s\n", fileid);
 }
 
 static void file_accepted_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)

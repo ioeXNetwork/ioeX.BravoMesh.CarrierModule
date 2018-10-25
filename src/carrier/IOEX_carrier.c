@@ -1821,12 +1821,14 @@ int update_file_receiver_path(FileTracker *receiver, const char *filename, const
 }
 
 static 
-void notify_file_request_cb(uint32_t friend_number, uint32_t file_number, 
+void notify_file_request_cb(const uint8_t *fileid, uint32_t friend_number, uint32_t file_number, 
                             const uint8_t *filename, uint64_t filesize, void *context)
 {
     IOEXCarrier *w = (IOEXCarrier *)context;
     FriendInfo *fi;
     int rc;
+    char encoded_fileid[IOEX_MAX_ID_LEN + 1];
+    int _len = IOEX_MAX_ID_LEN + 1;
 
     assert(friend_number != UINT32_MAX);
     assert(filename);
@@ -1838,6 +1840,12 @@ void notify_file_request_cb(uint32_t friend_number, uint32_t file_number,
         return;
     }
 
+    if(base58_encode(fileid, SYMMETRIC_KEY_BYTES, encoded_fileid, &_len) == NULL){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_ENCRYPT));
+        vlogE("Carrier: failed to encode file id.");
+        return;
+    }
+
     rc = add_new_file_receiver(w, friend_number, file_number, (char *)filename);
     if(rc < 0){
         IOEX_set_error(rc);
@@ -1846,7 +1854,7 @@ void notify_file_request_cb(uint32_t friend_number, uint32_t file_number,
     }
 
     if(w->callbacks.file_request){
-        w->callbacks.file_request(w, fi->info.user_info.userid, file_number, (char *)filename, filesize, w->context);
+        w->callbacks.file_request(w, encoded_fileid, fi->info.user_info.userid, file_number, (char *)filename, filesize, w->context);
     }
 }
 

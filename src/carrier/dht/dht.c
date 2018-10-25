@@ -533,7 +533,15 @@ void notify_file_request_cb(Tox *tox, uint32_t friend_number, uint32_t real_file
                             const uint8_t *filename, size_t filename_length, void *context)
 {
     DHTCallbacks *cbs = (DHTCallbacks *)context;
-    cbs->notify_file_request(friend_number, real_filenumber, filename, file_size, cbs->context);
+    uint8_t file_id[TOX_FILE_ID_LENGTH];
+
+    // TODO: add error
+    if(!tox_file_get_file_id(tox, friend_number, real_filenumber, file_id, 0)){
+        vlogE("Received unknown file request: friend_number=%u file_number=%u filename=%s", friend_number, real_filenumber, filename);
+        return;
+    }
+
+    cbs->notify_file_request(file_id, friend_number, real_filenumber, filename, file_size, cbs->context);
 }
 
 static 
