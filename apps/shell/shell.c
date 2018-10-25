@@ -1565,17 +1565,18 @@ static void list_files(IOEXCarrier *w, int argc, char *argv[])
 static void file_send_request(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
+    char fileid[IOEX_MAX_ID_LEN + 1];
     if(argc != 3){
         output("Invalid command syntax.\n");
         return;
     }
 
-    rc = IOEX_send_file_request(w, argv[1], argv[2]);
+    rc = IOEX_send_file_request(w, fileid, sizeof(fileid), argv[1], argv[2]);
     if(rc < 0){
         output("Invalid request.(0x%8X)\n", IOEX_get_error());
     }
     else{
-        output("File request sent.\n");
+        output("File request sent. File id=%s\n", fileid);
     }
 }
 

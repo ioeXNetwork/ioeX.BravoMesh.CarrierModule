@@ -1425,6 +1425,11 @@ int IOEX_reply_friend_invite(IOEXCarrier *carrier, const char *to,
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
  * @param
+ *      fileid      [out] The buffer that used to store base58 encoded file id.
+ *                        The size of the buffer should >= IOEX_MAX_ID_LEN (45).
+ * @param
+ *      id_len      [in] Size of the fileid buffer. It should >= IOEX_MAX_ID_LEN (45)
+ * @param
  *      friendid    [in] The user id from who send the file send request.
  * @param
  *      filename    [in] The name of file which is requested to be sent from friend.
@@ -1434,7 +1439,7 @@ int IOEX_reply_friend_invite(IOEXCarrier *carrier, const char *to,
  *      retrieved by calling IOEX_get_error().
  */
 CARRIER_API
-int IOEX_send_file_request(IOEXCarrier *carrier, const char *friendid, const char *filename);
+int IOEX_send_file_request(IOEXCarrier *carrier, char *fileid, size_t id_len, const char *friendid, const char *filename);
 
 /**
  * \~English

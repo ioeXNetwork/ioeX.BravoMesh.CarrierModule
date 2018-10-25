@@ -1047,7 +1047,7 @@ int dht_get_random_tcp_relay(DHT *dht, char *tcp_relay, size_t buflen,
     return 0;
 }
 
-int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath, uint32_t *filenum)
+int dht_file_send_request(DHT *dht, uint8_t *file_id, uint32_t friend_number, const char *fullpath, uint32_t *filenum)
 {
     Tox *tox = dht->tox;
     char filename[IOEX_MAX_FILE_NAME_LEN + 1];
@@ -1071,7 +1071,7 @@ int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath
         strncpy(filename, pch+1, sizeof(filename));
     }
 
-    *filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename, 
+    *filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, file_id, (uint8_t *)filename, 
                              strlen(filename), &error);
     if(*filenum != UINT32_MAX) {
         vlogI("Sent file send request.");

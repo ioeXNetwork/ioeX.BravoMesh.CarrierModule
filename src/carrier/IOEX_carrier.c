@@ -3188,13 +3188,17 @@ int IOEX_get_files(IOEXCarrier *w, IOEXFilesIterateCallback *callback, void *con
     return 0;
 }
 
-int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *fullpath)
+int IOEX_send_file_request(IOEXCarrier *w, char *fileid, size_t id_len, const char *friendid, const char *fullpath)
 {
     uint32_t friend_number;
     uint32_t file_number = UINT32_MAX;
-
+    uint8_t nonce[NONCE_BYTES];
+    uint8_t temp_data[IOEX_MAX_FULL_PATH_LEN + NONCE_BYTES];
+    uint8_t temp_fileid[SYMMETRIC_KEY_BYTES];
+    int _len = id_len + 1;
     int rc;
-    if(!w || !friendid || !fullpath){
+
+    if(!w || !fileid || !friendid || !fullpath || id_len <= IOEX_MAX_ID_LEN){
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
@@ -3205,7 +3209,7 @@ int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *ful
     if(!w->is_ready){
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_READY));
         return -1;
-    }    
+    }
 
     rc = get_friend_number(w, friendid, &friend_number);
     if(rc < 0){
@@ -3213,9 +3217,22 @@ int IOEX_send_file_request(IOEXCarrier *w, const char *friendid, const char *ful
         return -1;
     }
 
-    rc = dht_file_send_request(&w->dht, friend_number, fullpath, &file_number);
+    // Generate a file id with sha256(fullpath || nonce)
+    crypto_random_nonce(nonce);
+    memcpy(temp_data, fullpath, strlen(fullpath));
+    memcpy(&temp_data[strlen(fullpath)], nonce, sizeof(nonce));
+    sha256(temp_data, strlen(fullpath)+sizeof(nonce), temp_fileid, sizeof(temp_fileid));
+
+    // Send this file and pass our fileid into it
+    rc = dht_file_send_request(&w->dht, temp_fileid, friend_number, fullpath, &file_number);
     if(rc < 0 || file_number == UINT32_MAX){
         IOEX_set_error(rc);
+        return -1;
+    }
+
+    // Encode the temp_fileid to a readable string
+    if(base58_encode(temp_fileid, sizeof(temp_fileid), fileid, &_len) == NULL){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_ENCRYPT));
         return -1;
     }
 
