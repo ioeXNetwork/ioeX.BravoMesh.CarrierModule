@@ -648,7 +648,7 @@ typedef struct IOEXCallbacks {
      *      context     [in] The application defined context data.
      */
     void (*file_request)(IOEXCarrier *carrier, const char *fileid, const char *friendid,
-                         const char *filename, uint64_t filesize, void *context);
+                         const char *filename, size_t filesize, void *context);
 
     /**
      * \~English
@@ -662,10 +662,14 @@ typedef struct IOEXCallbacks {
      * @param
      *      friendid    [in] The user id from who accepted our send file request.
      * @param
+     *      fullpath    [in] The path and name of file which is accepted by the friend.
+     * @param
+     *      filesize    [in] The size of the file in bytes.
+     * @param
      *      context     [in] The application defined context data.
      */
     void (*file_accepted)(IOEXCarrier *carrier, const char *fileid, const char *friendid,
-                          void *context);
+                          const char *fullpath, size_t filesize, void *context);
 
     /**
      * \~English

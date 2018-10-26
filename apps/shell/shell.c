@@ -1992,7 +1992,7 @@ static void invite_request_callback(IOEXCarrier *w, const char *from,
 }
 
 static void file_request_callback(IOEXCarrier *w, const char *fileid, const char *friendid, const char *filename, 
-                                  const uint64_t filesize, void *context)
+                                  size_t filesize, void *context)
 {
     output("Send file request from friend[%s]\n", friendid);
     output("File name %s with size %u\n", filename, filesize);
@@ -2001,9 +2001,11 @@ static void file_request_callback(IOEXCarrier *w, const char *fileid, const char
     output("  filereject %s\n", fileid);
 }
 
-static void file_accepted_callback(IOEXCarrier *w, const char *fileid, const char *friendid, void *context)
+static void file_accepted_callback(IOEXCarrier *w, const char *fileid, const char *friendid, const char *fullpath, 
+                                   size_t filesize, void *context)
 {
     output("Friend[%s] has accepted file request [id:%s]\n", friendid, fileid);
+    output("File fullpath %s with size %u\n", fullpath, filesize);
 }
 
 static void file_rejected_callback(IOEXCarrier *w, const char *fileid, const char *friendid, void *context)

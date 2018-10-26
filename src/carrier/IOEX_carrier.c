@@ -1708,6 +1708,20 @@ bool get_fullpath(const FileTracker *ft, char *fullpath)
 }
 
 static
+bool get_filesize(const char *fullpath, size_t *size)
+{
+    FILE *tempfile = fopen(fullpath, "rb");
+    if(tempfile == NULL){
+        *size = 0;
+        return false;
+    }
+    fseek(tempfile, 0, SEEK_END);
+    *size = ftell(tempfile);
+    fclose(tempfile);
+    return true;
+}
+
+static
 bool is_sender(uint32_t file_number)
 {
     return file_number < 65536;
@@ -1876,6 +1890,9 @@ void notify_file_accepted_cb(const uint32_t friend_number, const uint32_t file_n
     uint8_t file_key[SYMMETRIC_KEY_BYTES];
     char fileid[IOEX_MAX_ID_LEN + 1];
     size_t _len = IOEX_MAX_ID_LEN + 1;
+    char fullpath[IOEX_MAX_FULL_PATH_LEN + 1];
+    FileTracker *sender;
+    size_t filesize;
     int rc;
     
     assert(friend_number != UINT32_MAX);
@@ -1894,7 +1911,7 @@ void notify_file_accepted_cb(const uint32_t friend_number, const uint32_t file_n
         return;
     }
 
-    if(!find_file_sender(w, file_key)){
+    if((sender = find_file_sender(w, file_key)) == NULL){
         IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID));
         vlogE("Carrier: cannot find file sender for friend_number:%u file_number:%u", friend_number, file_number);
         return;
@@ -1906,8 +1923,20 @@ void notify_file_accepted_cb(const uint32_t friend_number, const uint32_t file_n
         return;
     }
 
+    if(!get_fullpath(sender, fullpath)){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID));
+        vlogE("Carrier: failed to get file fullpath.");
+        return;
+    }
+
+    if(!get_filesize(fullpath, &filesize)){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_INVALID));
+        vlogE("Carrier: failed to get file size.");
+        return;
+    }
+
     if(w->callbacks.file_accepted){
-        w->callbacks.file_accepted(w, fileid, fi->info.user_info.userid, w->context);
+        w->callbacks.file_accepted(w, fileid, fi->info.user_info.userid, fullpath, filesize, w->context);
     }
 }
 
