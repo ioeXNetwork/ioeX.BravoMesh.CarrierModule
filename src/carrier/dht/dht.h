@@ -93,6 +93,8 @@ int dht_friend_delete(DHT *dht, uint32_t friend_number);
 int dht_get_random_tcp_relay(DHT *dht, char *tcp_relay, size_t buflen,
                              uint8_t *public_key);
 
+int dht_file_get_file_key(DHT *dht, uint8_t *file_key, uint32_t friend_number, uint32_t filenum);
+
 int dht_file_send_request(DHT *dht, uint8_t *fileid, uint32_t friend_number, const char *fullpath,
                           uint32_t *filenum);
 

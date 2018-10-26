@@ -1587,7 +1587,7 @@ static void file_send_seek(IOEXCarrier *w, int argc, char *argv[])
         output("Invalid command syntax.\n");
         return;
     }
-    rc = IOEX_send_file_seek(w, argv[1], argv[2], argv[3]);
+    rc = IOEX_send_file_seek(w, argv[1], argv[2]);
     if(rc < 0){
         output("Invalid request.(0x%8X)\n", IOEX_get_error());
     }
@@ -1599,11 +1599,11 @@ static void file_send_seek(IOEXCarrier *w, int argc, char *argv[])
 static void file_send_accept(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
-    if(argc != 5){
+    if(argc != 4){
         output("Invalid command syntax.\n");
         return;
     }
-    rc = IOEX_send_file_accept(w, argv[1], argv[2], argv[3], argv[4]);
+    rc = IOEX_send_file_accept(w, argv[1], argv[2], argv[3]);
     if(rc < 0){
         output("Invalid request.(0x%8X)\n", IOEX_get_error());
     }
@@ -1615,11 +1615,11 @@ static void file_send_accept(IOEXCarrier *w, int argc, char *argv[])
 static void file_send_reject(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
-    if(argc != 3){
+    if(argc != 2){
         output("Invalid command syntax.\n");
         return;
     }
-    rc = IOEX_send_file_reject(w, argv[1], argv[2]);
+    rc = IOEX_send_file_reject(w, argv[1]);
     if(rc < 0){
         output("Invalid request.(0x%8X)\n", IOEX_get_error());
     }
@@ -1631,11 +1631,11 @@ static void file_send_reject(IOEXCarrier *w, int argc, char *argv[])
 static void file_send_pause(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
-    if(argc != 3){
+    if(argc != 2){
         output("Invalid command syntax.\n");
         return;
     }
-    rc = IOEX_send_file_pause(w, argv[1], argv[2]);
+    rc = IOEX_send_file_pause(w, argv[1]);
     if(rc < 0){
         output("Invalid request.(0x%8X)\n", IOEX_get_error());
     }
@@ -1647,11 +1647,11 @@ static void file_send_pause(IOEXCarrier *w, int argc, char *argv[])
 static void file_send_resume(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
-    if(argc != 3){
+    if(argc != 2){
         output("Invalid command syntax.\n");
         return;
     }
-    rc = IOEX_send_file_resume(w, argv[1], argv[2]);
+    rc = IOEX_send_file_resume(w, argv[1]);
     if(rc < 0){
         output("Invalid request.(0x%8X)\n", IOEX_get_error());
     }
@@ -1663,11 +1663,11 @@ static void file_send_resume(IOEXCarrier *w, int argc, char *argv[])
 static void file_send_cancel(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
-    if(argc != 3){
+    if(argc != 2){
         output("Invalid command syntax.\n");
         return;
     }
-    rc = IOEX_send_file_cancel(w, argv[1], argv[2]);
+    rc = IOEX_send_file_cancel(w, argv[1]);
     if(rc < 0){
         output("Invalid request.(0x%8X)\n", IOEX_get_error());
     }
@@ -1725,7 +1725,7 @@ struct command {
 
     { "filesend",   file_send_request, 	    "filesend userid filename" },
     { "fileseek",   file_send_seek, 	    "fileseek userid fileindex position" },
-    { "fileaccept", file_send_accept, 	    "fileaccept userid fileindex newfilename filepath" },
+    { "fileaccept", file_send_accept, 	    "fileaccept fileid newfilename filepath" },
     { "filereject", file_send_reject, 	    "filereject userid fileindex" },
     { "filepause",  file_send_pause, 	    "filepause userid fileindex" },
     { "fileresume", file_send_resume, 	    "fileresume userid fileindex" },
@@ -1991,39 +1991,39 @@ static void invite_request_callback(IOEXCarrier *w, const char *from,
     output("  ireply %s refuse [reason]\n", from);
 }
 
-static void file_request_callback(IOEXCarrier *w, const char *fileid, const char *friendid, const uint32_t fileindex, const char *filename, 
+static void file_request_callback(IOEXCarrier *w, const char *fileid, const char *friendid, const char *filename, 
                                   const uint64_t filesize, void *context)
 {
     output("Send file request from friend[%s]\n", friendid);
-    output("File id %s name [%s] with size %u\n", fileid, filename, filesize);
+    output("File name %s with size %u\n", filename, filesize);
     output("Reply use following commands:\n");
     output("  fileaccept %s <new file name> <file path>\n", fileid);
     output("  filereject %s\n", fileid);
 }
 
-static void file_accepted_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+static void file_accepted_callback(IOEXCarrier *w, const char *fileid, const char *friendid, void *context)
 {
-    output("Friend[%s] has accepted file request [index:%u]\n", friendid, fileindex);
+    output("Friend[%s] has accepted file request [id:%s]\n", friendid, fileid);
 }
 
-static void file_rejected_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+static void file_rejected_callback(IOEXCarrier *w, const char *fileid, const char *friendid, void *context)
 {
-    output("Friend[%s] has rejected file request [index:%u]\n", friendid, fileindex);
+    output("Friend[%s] has rejected file request [id:%s]\n", friendid, fileid);
 }
 
-static void file_paused_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+static void file_paused_callback(IOEXCarrier *w, const char *fileid, const char *friendid, void *context)
 {
-    output("Friend[%s] has paused file transmission [index:%u]\n", friendid, fileindex);
+    output("Friend[%s] has paused file transmission [id:%s]\n", friendid, fileid);
 }
 
-static void file_resumed_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+static void file_resumed_callback(IOEXCarrier *w, const char *fileid, const char *friendid, void *context)
 {
-    output("Friend[%s] has resumed file transmission [index:%u]\n", friendid, fileindex);
+    output("Friend[%s] has resumed file transmission [id:%s]\n", friendid, fileid);
 }
 
-static void file_canceled_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+static void file_canceled_callback(IOEXCarrier *w, const char *fileid, const char *friendid, void *context)
 {
-    output("Friend[%s] has canceled file transmission [index:%u]\n", friendid, fileindex);
+    output("Friend[%s] has canceled file transmission [id:%s]\n", friendid, fileid);
 }
 
 static void file_chunk_send_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,

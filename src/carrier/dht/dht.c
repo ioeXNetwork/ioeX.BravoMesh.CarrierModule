@@ -1055,6 +1055,16 @@ int dht_get_random_tcp_relay(DHT *dht, char *tcp_relay, size_t buflen,
     return 0;
 }
 
+int dht_file_get_file_key(DHT *dht, uint8_t *file_key, uint32_t friend_number, uint32_t filenum)
+{
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_GET error;
+    if(!tox_file_get_file_id(tox, friend_number, filenum, file_key, &error)){
+        return IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID);
+    }
+    return IOEXSUCCESS;
+}
+
 int dht_file_send_request(DHT *dht, uint8_t *file_id, uint32_t friend_number, const char *fullpath, uint32_t *filenum)
 {
     Tox *tox = dht->tox;

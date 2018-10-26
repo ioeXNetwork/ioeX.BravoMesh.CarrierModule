@@ -410,7 +410,7 @@ typedef struct IOEXFriendInfo {
 } IOEXFriendInfo;
 
 typedef struct IOEXFileInfo {
-    // TODO: use variable length string
+    uint8_t file_key[32];
     char file_name[IOEX_MAX_FILE_NAME_LEN+1];
     char file_path[IOEX_MAX_FILE_PATH_LEN+1];
     uint32_t friend_number;
@@ -641,15 +641,13 @@ typedef struct IOEXCallbacks {
      * @param
      *      friendid    [in] The user id from who send the file send request.
      * @param
-     *      fileindex   [in] The index of the file send by the friend.
-     * @param
      *      filename    [in] The name of file which is requested to be sent from friend.
      * @param
      *      filesize    [in] The size of the file in bytes.
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*file_request)(IOEXCarrier *carrier, const char *fileid, const char *friendid, const uint32_t fileindex,
+    void (*file_request)(IOEXCarrier *carrier, const char *fileid, const char *friendid,
                          const char *filename, uint64_t filesize, void *context);
 
     /**
@@ -660,13 +658,13 @@ typedef struct IOEXCallbacks {
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
      * @param
-     *      friendid    [in] The user id from who accepted our send file request.
+     *      fileid      [in] The unique id for this file transmission.
      * @param
-     *      fileindex   [in] The index of the file that has been accepted.
+     *      friendid    [in] The user id from who accepted our send file request.
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*file_accepted)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
+    void (*file_accepted)(IOEXCarrier *carrier, const char *fileid, const char *friendid,
                           void *context);
 
     /**
@@ -677,13 +675,13 @@ typedef struct IOEXCallbacks {
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
      * @param
-     *      friendid    [in] The user id from who rejected our send file request.
+     *      fileid      [in] The unique id for this file transmission.
      * @param
-     *      fileindex   [in] The index of the file that has been rejected.
+     *      friendid    [in] The user id from who rejected our send file request.
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*file_rejected)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
+    void (*file_rejected)(IOEXCarrier *carrier, const char *fileid, const char *friendid,
                           void *context);
 
     /**
@@ -694,13 +692,13 @@ typedef struct IOEXCallbacks {
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
      * @param
-     *      friendid    [in] The user id from who paused the file transmission.
+     *      fileid      [in] The unique id for this file transmission.
      * @param
-     *      fileindex   [in] The index of the file that has been paused.
+     *      friendid    [in] The user id from who paused the file transmission.
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*file_paused)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
+    void (*file_paused)(IOEXCarrier *carrier, const char *fileid, const char *friendid, 
                         void *context);
 
     /**
@@ -711,13 +709,13 @@ typedef struct IOEXCallbacks {
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
      * @param
-     *      friendid    [in] The user id from who resumed the file transmission.
+     *      fileid      [in] The unique id for this file transmission.
      * @param
-     *      fileindex   [in] The index of the file that has been resumed.
+     *      friendid    [in] The user id from who resumed the file transmission.
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*file_resumed)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
+    void (*file_resumed)(IOEXCarrier *carrier, const char *fileid, const char *friendid,
                          void *context);
 
     /**
@@ -728,13 +726,13 @@ typedef struct IOEXCallbacks {
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
      * @param
-     *      friendid    [in] The user id from who canceled the file transmission.
+     *      fileid      [in] The unique id for this file transmission.
      * @param
-     *      fileindex   [in] The index of the file that has been canceled.
+     *      friendid    [in] The user id from who canceled the file transmission.
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*file_canceled)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
+    void (*file_canceled)(IOEXCarrier *carrier, const char *fileid, const char *friendid,
                           void *context);
 
     /**
@@ -1450,20 +1448,18 @@ int IOEX_send_file_request(IOEXCarrier *carrier, char *fileid, size_t id_len, co
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
  * @param
- *      friendid    [in] The user id from who sent the file send request.
- * @param
- *      fileindex   [in] The index of the file that will be accepted.
+ *      fileid      [in] The unique id of the file that will be accepted.
  * @param
  *      filename    [in] Rename the file as filename.
  * @param
- *      filepath    [in] The path to store the file
+ *      filepath    [in] The path to store the file.
  * @return
  *      0 if the request successfully send to the friend.
  *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling IOEX_get_error().
  */
 CARRIER_API
-int IOEX_send_file_accept(IOEXCarrier *carrier, const char *friendid, const char *fileindex, 
+int IOEX_send_file_accept(IOEXCarrier *carrier, const char *fileid,
                           const char *filename, const char *filepath);
 
 /**
@@ -1474,9 +1470,7 @@ int IOEX_send_file_accept(IOEXCarrier *carrier, const char *friendid, const char
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
  * @param
- *      friendid    [in] The user id from who sent the file send request.
- * @param
- *      fileindex   [in] The index of the file that will be sent.
+ *      fileid      [in] The unique id of the file that will be seeked.
  * @param
  *      position    [in] The start position of the file that should be sent.
  * @return
@@ -1485,7 +1479,7 @@ int IOEX_send_file_accept(IOEXCarrier *carrier, const char *friendid, const char
  *      retrieved by calling IOEX_get_error().
  */
 CARRIER_API
-int IOEX_send_file_seek(IOEXCarrier *carrier, const char *friendid, const char *fileindex, 
+int IOEX_send_file_seek(IOEXCarrier *carrier, const char *fileid,
                         const char *position);
 
 /**
@@ -1495,16 +1489,14 @@ int IOEX_send_file_seek(IOEXCarrier *carrier, const char *friendid, const char *
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
  * @param
- *      friendid    [in] The user id from who sent the file send request.
- * @param
- *      fileindex   [in] The index of the file that will be rejected.
+ *      fileid      [in] The unique id of the file that will be rejected.
  * @return
  *      0 if the request successfully send to the friend.
  *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling IOEX_get_error().
  */
 CARRIER_API
-int IOEX_send_file_reject(IOEXCarrier *carrier, const char *friendid, const char *fileindex);
+int IOEX_send_file_reject(IOEXCarrier *carrier, const char *fileid);
 
 /**
  * \~English
@@ -1513,16 +1505,14 @@ int IOEX_send_file_reject(IOEXCarrier *carrier, const char *friendid, const char
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
  * @param
- *      friendid    [in] The user id who sends/receives the file.
- * @param
- *      fileindex   [in] The index of the file that will be paused.
+ *      fileid      [in] The unique id of the file that will be paused.
  * @return
  *      0 if the request successfully send to the friend.
  *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling IOEX_get_error().
  */
 CARRIER_API
-int IOEX_send_file_pause(IOEXCarrier *carrier, const char *friendid, const char *fileindex);
+int IOEX_send_file_pause(IOEXCarrier *carrier, const char *fileid);
 
 /**
  * \~English
@@ -1531,16 +1521,14 @@ int IOEX_send_file_pause(IOEXCarrier *carrier, const char *friendid, const char 
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
  * @param
- *      friendid    [in] The user id from who sends/receives the file.
- * @param
- *      fileindex   [in] The index of the file that will be resumed.
+ *      fileid      [in] The unique id of the file that will be resumed.
  * @return
  *      0 if the request successfully send to the friend.
  *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling IOEX_get_error().
  */
 CARRIER_API
-int IOEX_send_file_resume(IOEXCarrier *carrier, const char *friendid, const char *fileindex);
+int IOEX_send_file_resume(IOEXCarrier *carrier, const char *fileid);
 
 /**
  * \~English
@@ -1549,16 +1537,14 @@ int IOEX_send_file_resume(IOEXCarrier *carrier, const char *friendid, const char
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
  * @param
- *      friendid    [in] The user id from who sends/receives the file.
- * @param
- *      fileindex   [in] The index of the file that will be canceled.
+ *      fileid      [in] The unique id of the file that will be canceled.
  * @return
  *      0 if the request successfully send to the friend.
  *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling IOEX_get_error().
  */
 CARRIER_API
-int IOEX_send_file_cancel(IOEXCarrier *carrier, const char *friendid, const char *fileindex);
+int IOEX_send_file_cancel(IOEXCarrier *carrier, const char *fileid);
 
 /**
  * \~English
