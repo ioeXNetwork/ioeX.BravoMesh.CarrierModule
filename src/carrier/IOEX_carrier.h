@@ -124,6 +124,18 @@ extern "C" {
 
 /**
  * \~English
+ * Carrier file key max length in bytes.
+ */
+#define IOEX_MAX_FILE_KEY_LEN            32
+
+/**
+ * \~English
+ * Carrier file id max length.
+ */
+#define IOEX_MAX_FILE_ID_LEN             IOEX_MAX_ID_LEN
+
+/**
+ * \~English
  * Carrier file name max length.
  */
 #define IOEX_MAX_FILE_NAME_LEN           511
@@ -410,10 +422,36 @@ typedef struct IOEXFriendInfo {
 } IOEXFriendInfo;
 
 typedef struct IOEXFileInfo {
-    uint8_t file_key[32];
+    /**
+     * \~English
+     * File's unique ID. Randomly generated while sending file request.
+     */
+    uint8_t file_key[IOEX_MAX_FILE_KEY_LEN];
+    /**
+     * \~English
+     * File's readable ID. It is file_key that encoded with base58.
+     */
+    char file_id[IOEX_MAX_FILE_ID_LEN+1];
+    /**
+     * \~English
+     * File's name.
+     */
     char file_name[IOEX_MAX_FILE_NAME_LEN+1];
+    /**
+     * \~English
+     * File's storage path.
+     */
     char file_path[IOEX_MAX_FILE_PATH_LEN+1];
+    /**
+     * \~English
+     * Index of the friend who is the participant of this transmission.
+     */
     uint32_t friend_number;
+    /**
+     * \~English
+     * Index to identify this file transmission.
+     * TOX use (friend_number, file_index) pair to identify a file transmission.
+     */
     uint32_t file_index;
 } IOEXFileInfo;
 
@@ -1144,8 +1182,6 @@ bool IOEX_is_ready(IOEXCarrier *carrier);
 typedef bool IOEXFriendsIterateCallback(const IOEXFriendInfo *info,
                                        void *context);
 
-typedef bool IOEXFilesIterateCallback(int direction, const IOEXFileInfo *info,
-                                       void *context);
 /**
  * \~English
  * Get friends list. For each friend will call the application defined
@@ -1422,6 +1458,24 @@ int IOEX_reply_friend_invite(IOEXCarrier *carrier, const char *to,
  * File transmitting
  *****************************************************************************/
 
+/**
+ * \~English
+ * An application-defined function that iterate the each file transmission.
+ *
+ * IOEXFilesIterateCallback is the callback function type.
+ *
+ * @param
+ *      info        [in] A pointer to IOEXFileInfo structure that
+ *                       representing a file transmission.
+ * @param
+ *      context     [in] The application defined context data.
+ *
+ * @return
+ *      Return true to continue iterate next file info,
+ *      false to stop iterate.
+ */
+typedef bool IOEXFilesIterateCallback(int direction, const IOEXFileInfo *info,
+                                      void *context);
 /**
  * \~English
  * An application-defined function that process the file send request.

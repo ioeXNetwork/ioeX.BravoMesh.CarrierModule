@@ -1531,14 +1531,15 @@ static void help(IOEXCarrier *w, int argc, char *argv[]);
 static bool get_files_callback(int direction, const IOEXFileInfo *fi, void *context)
 {
     static int count = 0;
+
     if(fi != NULL){
         if (direction == 0) {
             count++;
-            output("Send: [%u]%s to friend: %u\n", fi->file_index, fi->file_name, fi->friend_number);
+            output("Send: [%s] %s to friend: %u\n", fi->file_id, fi->file_name, fi->friend_number);
         }
         else{
             count++;
-            output("Receive: [%u]%s from friend: %u\n", fi->file_index, fi->file_name, fi->friend_number);
+            output("Receive: [%s] %s from friend: %u\n", fi->file_id, fi->file_name, fi->friend_number);
         }
     }
     else{
