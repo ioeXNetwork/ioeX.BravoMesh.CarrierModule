@@ -2090,6 +2090,11 @@ static void file_canceled_callback(IOEXCarrier *w, const char *fileid, const cha
     output("Friend[%s] has canceled file transmission [id:%s]\n", friendid, fileid);
 }
 
+static void file_completed_callback(IOEXCarrier *w, const char *fileid, const char *friendid, void *context)
+{
+    output("File transmission [id:%s] with friend [%s] has completed\n", fileid, friendid);
+}
+
 static void file_chunk_send_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
                                      const uint64_t position, const size_t length, void *context)
 {
@@ -2254,6 +2259,7 @@ int main(int argc, char *argv[])
     callbacks.file_paused = file_paused_callback;
     callbacks.file_resumed = file_resumed_callback;
     callbacks.file_canceled = file_canceled_callback;
+    callbacks.file_completed = file_completed_callback;
     //callbacks.file_chunk_send = file_chunk_send_callback;
     //callbacks.file_chunk_send_error = file_chunk_send_error_callback;
     //callbacks.file_chunk_receive = file_chunk_receive_callback;

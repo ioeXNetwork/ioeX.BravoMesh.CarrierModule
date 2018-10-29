@@ -900,6 +900,22 @@ typedef struct IOEXCallbacks {
 
     /**
      * \~English
+     * An application-defined function that is called when file transmission is completed.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      fileid      [in] The unique id for this file transmission.
+     * @param
+     *      friendid    [in] The user id from who participant this file transmission.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*file_completed)(IOEXCarrier *carrier, const char *fileid, const char *friendid,
+                           void *context);
+
+    /**
+     * \~English
      * An application-defined function that process the file chunk send.
      *
      * @param

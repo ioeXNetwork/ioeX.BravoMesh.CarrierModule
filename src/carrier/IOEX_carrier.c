@@ -2173,6 +2173,9 @@ void notify_file_chunk_request_cb(const uint32_t friend_number, const uint32_t f
     FileTracker *sender;
     if((sender = find_file_sender(w, file_key)) != NULL){
         if(length == 0){
+            if(w->callbacks.file_completed){
+                w->callbacks.file_completed(w, sender->ti.file_id, tmpid, w->context);
+            }
             remove_file_sender(w, sender);
         }
         else if(get_fullpath(sender, fullpath)){
@@ -2235,6 +2238,10 @@ void notify_file_chunk_receive_cb(uint32_t friend_number, uint32_t file_number, 
     char fullpath[IOEX_MAX_FULL_PATH_LEN + 1];
     if((receiver = find_file_receiver(w, file_key)) != NULL){
         if(length == 0){
+            if(w->callbacks.file_completed){
+                w->callbacks.file_completed(w, receiver->ti.file_id, tmpid, w->context);
+            }
+            vlogI("File[%s] receive complete.", fullpath);
             remove_file_receiver(w, receiver);
         }
         else if(get_fullpath(receiver, fullpath)){
@@ -2256,9 +2263,6 @@ void notify_file_chunk_receive_cb(uint32_t friend_number, uint32_t file_number, 
         else {
             vlogE("Cannot write file chunk to the file[%s]", fullpath);
         }
-    }
-    else{
-        vlogI("File[%s] receive complete.", fullpath);
     }
 
     if(w->callbacks.file_chunk_receive){
