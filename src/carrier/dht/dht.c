@@ -549,7 +549,7 @@ void notify_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_numb
                             void *context)
 {
     DHTCallbacks *cbs = (DHTCallbacks *)context;
-    TOX_ERR_FILE_SEND error;
+    TOX_ERR_FILE_GET error;
     int receive_send;
     uint64_t size, transferred;
     uint8_t status, pause;

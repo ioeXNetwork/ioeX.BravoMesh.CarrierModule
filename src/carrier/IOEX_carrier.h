@@ -450,6 +450,11 @@ typedef struct IOEXTrackerInfo {
     char file_path[IOEX_MAX_FILE_PATH_LEN+1];
     /**
      * \~English
+     * The total size of the file.
+     */
+    uint64_t file_size;
+    /**
+     * \~English
      * Index of the friend who is the participant of this transmission.
      */
     uint32_t friend_number;
@@ -564,11 +569,6 @@ typedef struct IOEXFileInfo {
      * The direction of the transmission. Unknown(0) if no tracker found.
      */
     IOEXFileTransmissionDirection direction;
-    /**
-     * \~English
-     * The total size of the file. 0 if no tracker found.
-     */
-    uint64_t file_size;
     /**
      * \~English
      * The transferred size of the file. 0 if no tracker found.
@@ -907,7 +907,7 @@ typedef struct IOEXCallbacks {
      * @param
      *      fileid      [in] The unique id for this file transmission.
      * @param
-     *      friendid    [in] The user id from who participant this file transmission.
+     *      friendid    [in] The user id who participant this file transmission.
      * @param
      *      context     [in] The application defined context data.
      */
@@ -916,73 +916,26 @@ typedef struct IOEXCallbacks {
 
     /**
      * \~English
-     * An application-defined function that process the file chunk send.
+     * An application-defined function that serves as file transmission progress callback
      *
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
      * @param
-     *      friendid    [in] The user id whom we sent file chunk to.
+     *      fileid      [in] The unique id for this file transmission.
      * @param
-     *      fileindex   [in] The index of the file which is sent.
-     * @param
-     *      fullpath    [in] The path with name of the local file.
-     * @param
-     *      position    [in] The start position of the file in bytes that is sent.
-     * @param
-     *      length      [in] The size of the file that is sent in bytes.
-     * @param
-     *      context     [in] The application defined context data.
-     */
-    void (*file_chunk_send)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
-                            const char *fullpath, const uint64_t position, const size_t length, 
-                            void *context);
-    /**
-     * \~English
-     * An application-defined function that process the file chunk send errors.
-     *
-     * @param
-     *      carrier     [in] A handle to the Carrier node instance.
-     * @param
-     *      errcode     [in] The error code.
-     * @param
-     *      friendid    [in] The user id whom we sent file chunk to.
-     * @param
-     *      fileindex   [in] The index of the file which is sent.
+     *      friendid    [in] The user id who participant this file transmission.
      * @param
      *      fullpath    [in] The path with name of the local file.
      * @param
-     *      position    [in] The start position of the file in bytes that is sent.
+     *      size        [in] The total size in byte of this file.
      * @param
-     *      length      [in] The size of the file that is sent in bytes.
-     * @param
-     *      context     [in] The application defined context data.
-     */
-    void (*file_chunk_send_error)(IOEXCarrier *carrier, int errcode, const char *friendid, const uint32_t fileindex, 
-                                  const char *fullpath, const uint64_t position, const size_t length, 
-                                  void *context);
-
-    /**
-     * \~English
-     * An application-defined function that process received file chunks.
-     *
-     * @param
-     *      carrier     [in] A handle to the Carrier node instance.
-     * @param
-     *      friendid    [in] The user id from who sent us the file chunks.
-     * @param
-     *      fileindex   [in] The index of the file which is received.
-     * @param
-     *      fullpath    [in] The path with name of the local file.
-     * @param
-     *      position    [in] The start position of the file in bytes to be store.
-     * @param
-     *      length      [in] The size of the file that should be stored in bytes.
+     *      transferred [in] The transferred size in byte of this file.
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*file_chunk_receive)(IOEXCarrier *carrier, const char *friendid, const uint32_t fileindex, 
-                               const char *fullpath, const uint64_t position, const size_t length, 
-                               void *context);
+    void (*file_progress)(IOEXCarrier *carrier, const char *fileid, const char *friendid,
+                          const char *fullpath, uint64_t size, uint64_t transferred,
+                          void *context);
 } IOEXCallbacks;
 
 /**

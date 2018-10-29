@@ -1729,8 +1729,8 @@ static void file_info(IOEXCarrier *w, int argc, char *argv[])
     else{
         output("%s file name:%s id:%s\n", fileinfo.direction == IOEXFileTransmissionDirection_Receive?"Receiving":"Sending",
                 fileinfo.ti.file_name, fileinfo.ti.file_id);
-        output("Total size:%u currently transferred:%u (%.2f%%)\n", fileinfo.file_size, fileinfo.transferred_size,
-                (double)fileinfo.transferred_size / (double)fileinfo.file_size);
+        output("Total size:%u currently transferred:%u (%.2f%%)\n", fileinfo.ti.file_size, fileinfo.transferred_size,
+                (float)fileinfo.transferred_size * 100.0 / (float)fileinfo.ti.file_size);
         _file_info_status_string(fileinfo.status, status);
         _file_info_pause_string(fileinfo.paused, pause);
         output("Status: %s %s\n", status, pause);
@@ -2095,26 +2095,11 @@ static void file_completed_callback(IOEXCarrier *w, const char *fileid, const ch
     output("File transmission [id:%s] with friend [%s] has completed\n", fileid, friendid);
 }
 
-static void file_chunk_send_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
-                                     const uint64_t position, const size_t length, void *context)
+static void file_progress_callback(IOEXCarrier *w, const char *fileid, const char *friendid,
+        const char *fullpath, uint64_t size, uint64_t transferred,
+        void *context)
 {
-    output("Sent a file chunk of file[%s] index:%u to friend[%s]\n", filename, fileindex, friendid);
-    output("From position: %u and length: %u\n", position, length);
-}
-
-static void file_chunk_send_error_callback(IOEXCarrier *w, int errcode, const char *friendid, const uint32_t fileindex, const char *filename,
-                                     const uint64_t position, const size_t length, void *context)
-{
-    output("Failed to sent a file chunk of file[%s] index:%u to friend[%s]\n", filename, fileindex, friendid);
-    output("From position: %u and length: %u\n", position, length);
-    output("Error code: 0x%08x\n", errcode);
-}
-
-static void file_chunk_receive_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
-                                        const uint64_t position, const size_t length, void *context)
-{
-    output("Friend[%s] sent a file chunk of file[%s] index:%u]\n", friendid, filename, fileindex);
-    output("From position: %u and length: %u\n", position, length);
+    output("File progress: %.2f%%\n", size, transferred, (float)transferred*100.0/(float)size);
 }
 
 static void usage(void)
@@ -2260,9 +2245,7 @@ int main(int argc, char *argv[])
     callbacks.file_resumed = file_resumed_callback;
     callbacks.file_canceled = file_canceled_callback;
     callbacks.file_completed = file_completed_callback;
-    //callbacks.file_chunk_send = file_chunk_send_callback;
-    //callbacks.file_chunk_send_error = file_chunk_send_error_callback;
-    //callbacks.file_chunk_receive = file_chunk_receive_callback;
+    //callbacks.file_progress = file_progress_callback;
 
     w = IOEX_new(&opts, &callbacks, NULL);
     deref(cfg);
