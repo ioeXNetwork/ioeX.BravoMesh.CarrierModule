@@ -549,19 +549,42 @@ void notify_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_numb
                             void *context)
 {
     DHTCallbacks *cbs = (DHTCallbacks *)context;
-    // TODO: add other control callbacks. Also have a better way to determine it is start or resume
+    TOX_ERR_FILE_SEND error;
+    int receive_send;
+    uint64_t size, transferred;
+    uint8_t status, pause;
+
+    if(file_number > 65535){
+        receive_send = 0;
+    }
+    else{
+        receive_send = 1;
+    }
+
+    if(!tox_file_get_transfer_status(tox, receive_send, friend_number, file_number, &size, &transferred, &status, &pause, &error)){
+        vlogE("Failed to find file transfer for friend[%u] file[%u]", friend_number, file_number);
+        return;
+    }
 
     switch(control){
         case TOX_FILE_CONTROL_PAUSE:
             cbs->notify_file_paused(friend_number, file_number, cbs->context);
             break;
         case TOX_FILE_CONTROL_RESUME:
-            cbs->notify_file_resumed(friend_number, file_number, cbs->context);
-            cbs->notify_file_accepted(friend_number, file_number, cbs->context);
+            if(transferred == 0){
+                cbs->notify_file_accepted(friend_number, file_number, cbs->context);
+            }
+            else{
+                cbs->notify_file_resumed(friend_number, file_number, cbs->context);
+            }
             break;
         case TOX_FILE_CONTROL_CANCEL:
-            cbs->notify_file_canceled(friend_number, file_number, cbs->context);
-            cbs->notify_file_rejected(friend_number, file_number, cbs->context);
+            if(status == IOEXFileTransmissionStatus_Pending){
+                cbs->notify_file_rejected(friend_number, file_number, cbs->context);
+            }
+            else{
+                cbs->notify_file_canceled(friend_number, file_number, cbs->context);
+            }
             break;
         default:
             vlogE("Received unknown file control:%d from friend[%u] for file[%u]", control, friend_number, file_number);
