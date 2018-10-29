@@ -421,7 +421,13 @@ typedef struct IOEXFriendInfo {
     IOEXPresenceStatus presence;
 } IOEXFriendInfo;
 
-typedef struct IOEXFileInfo {
+/**
+ * \~English
+ * File tracker data structure.
+ * It is used to track and map file name, key, id, and (friend_number, file_index) pair.
+ * It is important to update trackers correctly in carrier APIs and callbacks.
+ */
+typedef struct IOEXTrackerInfo {
     /**
      * \~English
      * File's unique ID. Randomly generated while sending file request.
@@ -453,6 +459,121 @@ typedef struct IOEXFileInfo {
      * TOX use (friend_number, file_index) pair to identify a file transmission.
      */
     uint32_t file_index;
+} IOEXTrackerInfo;
+
+/**
+ * \~English
+ * File transmission status.
+ */
+typedef enum IOEXFileTransmissionStatus {
+    /**
+     * \~English
+     * No file transmission.
+     */
+    IOEXFileTransmissionStatus_None,
+    /**
+     * \~English
+     * File transmission request is sent, and is currently waiting for response
+     */
+    IOEXFileTransmissionStatus_Pending,
+    /**
+     * \~English
+     * File is transmitting.
+     */
+    IOEXFileTransmissionStatus_Running,
+    /**
+     * \~English
+     * File transmission is finished.
+     */
+    IOEXFileTransmissionStatus_Finished
+} IOEXFileTransmissionStatus;
+
+/**
+ * \~English
+ * File transmission paused status.
+ */
+typedef enum IOEXFileTransmissionPausedStatus {
+    /**
+     * \~English
+     * File transmission is running. No one paused.
+     */
+    IOEXFileTransmissionPausedStatus_None,
+    /**
+     * \~English
+     * File transmission is paused by us.
+     */
+    IOEXFileTransmissionPausedStatus_Us,
+    /**
+     * \~English
+     * File transmission is paused by the other.
+     */
+    IOEXFileTransmissionPausedStatus_Other,
+    /**
+     * \~English
+     * File transmission is paused by both.
+     */
+    IOEXFileTransmissionPausedStatus_Both
+} IOEXFileTransmissionPausedStatus;
+
+/**
+ * \~English
+ * File transmission direction.
+ */
+typedef enum IOEXFileTransmissionDirection {
+    /**
+     * \~English
+     * Direction is unknown.
+     */
+    IOEXFileTransmissionDirection_Unknown,
+    /**
+     * \~English
+     * We are the file sender.
+     */
+    IOEXFileTransmissionDirection_Send,
+    /**
+     * \~English
+     * We are the file receiver.
+     */
+    IOEXFileTransmissionDirection_Receive
+} IOEXFileTransmissionDirection;
+
+/**
+ * \~English
+ * File transmission status.
+ * This is the interface for applications who wants to know file transmission status.
+ * The info are retrieved on the fly and should never be cached for future use.
+ */
+typedef struct IOEXFileInfo {
+    /**
+     * \~English
+     * The copy of the correspond file tracker.
+     */
+    IOEXTrackerInfo ti;
+    /**
+     * \~English
+     * The status of the transmission. None(0) if no tracker found.
+     */
+    IOEXFileTransmissionStatus status;
+    /**
+     * \~English
+     * The paused status of the transmission. None(0) if no tracker found.
+     */
+    IOEXFileTransmissionPausedStatus paused;
+    /**
+     * \~English
+     * The direction of the transmission. Unknown(0) if no tracker found.
+     */
+    IOEXFileTransmissionDirection direction;
+    /**
+     * \~English
+     * The total size of the file. 0 if no tracker found.
+     */
+    uint64_t file_size;
+    /**
+     * \~English
+     * The transferred size of the file. 0 if no tracker found.
+     */
+    uint64_t transferred_size;
 } IOEXFileInfo;
 
 /**
@@ -1465,7 +1586,7 @@ int IOEX_reply_friend_invite(IOEXCarrier *carrier, const char *to,
  * IOEXFilesIterateCallback is the callback function type.
  *
  * @param
- *      info        [in] A pointer to IOEXFileInfo structure that
+ *      info        [in] A pointer to IOEXTrackerInfo structure that
  *                       representing a file transmission.
  * @param
  *      context     [in] The application defined context data.
@@ -1474,7 +1595,7 @@ int IOEX_reply_friend_invite(IOEXCarrier *carrier, const char *to,
  *      Return true to continue iterate next file info,
  *      false to stop iterate.
  */
-typedef bool IOEXFilesIterateCallback(int direction, const IOEXFileInfo *info,
+typedef bool IOEXFilesIterateCallback(int direction, const IOEXTrackerInfo *info,
                                       void *context);
 /**
  * \~English
@@ -1606,7 +1727,7 @@ int IOEX_send_file_cancel(IOEXCarrier *carrier, const char *fileid);
 
 /**
  * \~English
- * An application-defined function that process the file send request.
+ * An application-defined function that iteratively get file info.
  *
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
@@ -1621,6 +1742,24 @@ int IOEX_send_file_cancel(IOEXCarrier *carrier, const char *fileid);
  */
 CARRIER_API
 int IOEX_get_files(IOEXCarrier *carrier, IOEXFilesIterateCallback *callback, void *context);
+
+/**
+ * \~English
+ * An application-defined function that get file info.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      fileinfo    [out] The buffer to store the file transmission info.
+ * @param
+ *      fileid      [in] The unique id of the file transmission.
+ * @return
+ *      0 if the request successfully send to the friend.
+ *      Otherwise, return -1, and a specific error code can be
+ *      retrieved by calling IOEX_get_error().
+ */
+CARRIER_API
+int IOEX_get_file_info(IOEXCarrier *carrier, IOEXFileInfo *fileinfo, const char *fileid);
 
 /******************************************************************************
  * Error handling

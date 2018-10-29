@@ -1528,7 +1528,7 @@ static void portforwarding_close(IOEXCarrier *w, int argc, char *argv[])
 
 static void help(IOEXCarrier *w, int argc, char *argv[]);
 
-static bool get_files_callback(int direction, const IOEXFileInfo *fi, void *context)
+static bool get_files_callback(int direction, const IOEXTrackerInfo *fi, void *context)
 {
     static int count = 0;
 
@@ -1677,6 +1677,66 @@ static void file_send_cancel(IOEXCarrier *w, int argc, char *argv[])
     }
 }
 
+static void _file_info_status_string(const uint8_t status, char *string)
+{
+    switch(status){
+        case IOEXFileTransmissionStatus_Pending:
+            strcpy(string, "Waiting");
+            break;
+        case IOEXFileTransmissionStatus_Running:
+            strcpy(string, "Transmitting");
+            break;
+        case IOEXFileTransmissionStatus_Finished:
+            strcpy(string, "Finished");
+            break;
+        case IOEXFileTransmissionStatus_None:
+        default:
+            strcpy(string, "Not transmitting");
+    }
+}
+
+static void _file_info_pause_string(const uint8_t pause, char *string)
+{
+    switch(pause){
+        case IOEXFileTransmissionPausedStatus_Us:
+            strcpy(string, "(Paused by us)");
+            break;
+        case IOEXFileTransmissionPausedStatus_Other:
+            strcpy(string, "(Paused by other)");
+            break;
+        case IOEXFileTransmissionPausedStatus_Both:
+            strcpy(string, "(Paused by both)");
+            break;
+        case IOEXFileTransmissionPausedStatus_None:
+        default:
+            strcpy(string, "");
+    }
+}
+
+static void file_info(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    IOEXFileInfo fileinfo;
+    char status[80], pause[80];
+    if(argc != 2){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_get_file_info(w, &fileinfo, argv[1]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("%s file name:%s id:%s\n", fileinfo.direction == IOEXFileTransmissionDirection_Receive?"Receiving":"Sending",
+                fileinfo.ti.file_name, fileinfo.ti.file_id);
+        output("Total size:%u currently transferred:%u (%.2f%%)\n", fileinfo.file_size, fileinfo.transferred_size,
+                (double)fileinfo.transferred_size / (double)fileinfo.file_size);
+        _file_info_status_string(fileinfo.status, status);
+        _file_info_pause_string(fileinfo.paused, pause);
+        output("Status: %s %s\n", status, pause);
+    }
+}
+
 struct command {
     const char *cmd;
     void (*function)(IOEXCarrier *w, int argc, char *argv[]);
@@ -1725,12 +1785,13 @@ struct command {
     { "scleanup",   session_cleanup,        "scleanup" },
 
     { "filesend",   file_send_request, 	    "filesend userid filename" },
-    { "fileseek",   file_send_seek, 	    "fileseek userid fileindex position" },
+    { "fileseek",   file_send_seek, 	    "fileseek fileid position" },
     { "fileaccept", file_send_accept, 	    "fileaccept fileid newfilename filepath" },
-    { "filereject", file_send_reject, 	    "filereject userid fileindex" },
-    { "filepause",  file_send_pause, 	    "filepause userid fileindex" },
-    { "fileresume", file_send_resume, 	    "fileresume userid fileindex" },
-    { "filecancel", file_send_cancel, 	    "filecancel userid fileindex" },
+    { "filereject", file_send_reject, 	    "filereject fileid" },
+    { "filepause",  file_send_pause, 	    "filepause fileid" },
+    { "fileresume", file_send_resume, 	    "fileresume fileid" },
+    { "filecancel", file_send_cancel, 	    "filecancel fileid" },
+    { "fileinfo",   file_info,      	    "fileinfo fileid" },
     { "files",      list_files,      	    "files" },
     { "kill",       kill_carrier,           "kill" },
     { NULL }

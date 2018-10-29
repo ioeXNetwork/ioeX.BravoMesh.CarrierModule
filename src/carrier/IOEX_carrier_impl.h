@@ -68,7 +68,7 @@ typedef struct FriendEvent {
 
 typedef struct FileTracker {
     ListEntry le;
-    IOEXFileInfo fi;
+    IOEXTrackerInfo ti;
 } FileTracker;
 
 struct IOEXCarrier {

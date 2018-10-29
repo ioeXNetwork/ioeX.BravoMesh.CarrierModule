@@ -1688,13 +1688,13 @@ void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
 static
 bool get_fullpath(const FileTracker *ft, char *fullpath)
 {
-    const IOEXFileInfo *info;
+    const IOEXTrackerInfo *info;
 
     if(!ft || !fullpath){
         return false;
     }
 
-    info = &(ft->fi);
+    info = &(ft->ti);
     if(info->file_path == NULL || strlen(info->file_path) == 0){
         snprintf(fullpath, IOEX_MAX_FULL_PATH_LEN, "%s", info->file_name);
     }
@@ -1735,7 +1735,7 @@ FileTracker* _find_file_tracker(List *list, const uint8_t *file_key)
 
     ListIterator it;
     FileTracker *ft = NULL;
-    IOEXFileInfo *info = NULL;
+    IOEXTrackerInfo *info = NULL;
     int rc;
 
     list_iterate(list, &it);
@@ -1744,7 +1744,7 @@ FileTracker* _find_file_tracker(List *list, const uint8_t *file_key)
         if(rc == 0){
             break;
         }
-        info = &ft->fi;
+        info = &ft->ti;
         if(!memcmp(info->file_key, file_key, sizeof(info->file_key))){
             return ft;
         }
@@ -1760,7 +1760,7 @@ FileTracker* _find_file_tracker_by_id(List *list, const char *file_id)
 
     ListIterator it;
     FileTracker *ft = NULL;
-    IOEXFileInfo *info = NULL;
+    IOEXTrackerInfo *info = NULL;
     int rc;
 
     list_iterate(list, &it);
@@ -1769,7 +1769,7 @@ FileTracker* _find_file_tracker_by_id(List *list, const char *file_id)
         if(rc == 0){
             break;
         }
-        info = &ft->fi;
+        info = &ft->ti;
         if(!strncmp(info->file_id, file_id, sizeof(info->file_id))){
             return ft;
         }
@@ -1814,18 +1814,18 @@ int add_new_file_sender(IOEXCarrier *w, const uint8_t *file_key, const char *fil
 
     char *pch = strrchr(fullpath, '/');
     if(pch == NULL){
-        strncpy(sender->fi.file_name, fullpath, sizeof(sender->fi.file_name));
-        strncpy(sender->fi.file_path, "", sizeof(sender->fi.file_path));
+        strncpy(sender->ti.file_name, fullpath, sizeof(sender->ti.file_name));
+        strncpy(sender->ti.file_path, "", sizeof(sender->ti.file_path));
     }
     else{
-        strncpy(sender->fi.file_name, pch+1, sizeof(sender->fi.file_name));
-        strncpy(sender->fi.file_path, fullpath, pch-fullpath+1);
-        sender->fi.file_path[pch-fullpath] = '\0';
+        strncpy(sender->ti.file_name, pch+1, sizeof(sender->ti.file_name));
+        strncpy(sender->ti.file_path, fullpath, pch-fullpath+1);
+        sender->ti.file_path[pch-fullpath] = '\0';
     }
-    memcpy(sender->fi.file_key, file_key, sizeof(sender->fi.file_key));
-    strncpy(sender->fi.file_id, file_id, sizeof(sender->fi.file_id));
-    sender->fi.friend_number = friend_number;
-    sender->fi.file_index = file_number;
+    memcpy(sender->ti.file_key, file_key, sizeof(sender->ti.file_key));
+    strncpy(sender->ti.file_id, file_id, sizeof(sender->ti.file_id));
+    sender->ti.friend_number = friend_number;
+    sender->ti.file_index = file_number;
     sender->le.data = sender;
 
     list_add(w->file_senders, &sender->le);
@@ -1844,12 +1844,12 @@ int add_new_file_receiver(IOEXCarrier *w, const uint8_t *file_key, const char *f
     if(filename == NULL){
         return IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS);
     }
-    memcpy(receiver->fi.file_key, file_key, sizeof(receiver->fi.file_key));
-    strncpy(receiver->fi.file_id, file_id, sizeof(receiver->fi.file_id));
-    strncpy(receiver->fi.file_name, filename, sizeof(receiver->fi.file_name));
-    strncpy(receiver->fi.file_path, "/tmp/", sizeof(receiver->fi.file_path));
-    receiver->fi.friend_number = friend_number;
-    receiver->fi.file_index = file_number;
+    memcpy(receiver->ti.file_key, file_key, sizeof(receiver->ti.file_key));
+    strncpy(receiver->ti.file_id, file_id, sizeof(receiver->ti.file_id));
+    strncpy(receiver->ti.file_name, filename, sizeof(receiver->ti.file_name));
+    strncpy(receiver->ti.file_path, "/tmp/", sizeof(receiver->ti.file_path));
+    receiver->ti.friend_number = friend_number;
+    receiver->ti.file_index = file_number;
     receiver->le.data = receiver;
 
     list_add(w->file_receivers, &receiver->le);
@@ -1877,7 +1877,7 @@ int update_file_receiver_path(FileTracker *receiver, const char *filename, const
         return IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID);
     }
 
-    IOEXFileInfo *info = &receiver->fi;
+    IOEXTrackerInfo *info = &receiver->ti;
     strncpy(info->file_name, filename, sizeof(info->file_name));
     strncpy(info->file_path, filepath, sizeof(info->file_path));
 
@@ -1969,7 +1969,7 @@ void notify_file_accepted_cb(const uint32_t friend_number, const uint32_t file_n
     }
 
     if(w->callbacks.file_accepted){
-        w->callbacks.file_accepted(w, sender->fi.file_id, fi->info.user_info.userid, fullpath, filesize, w->context);
+        w->callbacks.file_accepted(w, sender->ti.file_id, fi->info.user_info.userid, fullpath, filesize, w->context);
     }
 }
 
@@ -2007,7 +2007,7 @@ void notify_file_rejected_cb(const uint32_t friend_number, const uint32_t file_n
     remove_file_sender(w, sender);
 
     if(w->callbacks.file_rejected){
-        w->callbacks.file_rejected(w, sender->fi.file_id, fi->info.user_info.userid, w->context);
+        w->callbacks.file_rejected(w, sender->ti.file_id, fi->info.user_info.userid, w->context);
     }
 }
 
@@ -2050,7 +2050,7 @@ void notify_file_paused_cb(const uint32_t friend_number, const uint32_t file_num
     }
 
     if(w->callbacks.file_paused){
-        w->callbacks.file_paused(w, tracker->fi.file_id, fi->info.user_info.userid, w->context);
+        w->callbacks.file_paused(w, tracker->ti.file_id, fi->info.user_info.userid, w->context);
     }
 }
 
@@ -2093,7 +2093,7 @@ void notify_file_resumed_cb(const uint32_t friend_number, const uint32_t file_nu
     }
 
     if(w->callbacks.file_resumed){
-        w->callbacks.file_resumed(w, tracker->fi.file_id, fi->info.user_info.userid, w->context);
+        w->callbacks.file_resumed(w, tracker->ti.file_id, fi->info.user_info.userid, w->context);
     }
 }
 
@@ -2138,7 +2138,7 @@ void notify_file_canceled_cb(const uint32_t friend_number, const uint32_t file_n
     }
     
     if(w->callbacks.file_canceled){
-        w->callbacks.file_canceled(w, tracker->fi.file_id, fi->info.user_info.userid, w->context);
+        w->callbacks.file_canceled(w, tracker->ti.file_id, fi->info.user_info.userid, w->context);
     }
 }
 
@@ -3300,9 +3300,9 @@ int IOEX_get_files(IOEXCarrier *w, IOEXFilesIterateCallback *callback, void *con
         if (rc == 0)
             break;
 
-        IOEXFileInfo wfi;
+        IOEXTrackerInfo wfi;
 
-        memcpy(&wfi, &ft->fi, sizeof(IOEXFileInfo));
+        memcpy(&wfi, &ft->ti, sizeof(IOEXTrackerInfo));
         deref(ft);
 
         if (!callback(0, &wfi, context))
@@ -3316,9 +3316,9 @@ int IOEX_get_files(IOEXCarrier *w, IOEXFilesIterateCallback *callback, void *con
         if (rc == 0)
             break;
 
-        IOEXFileInfo wfi;
+        IOEXTrackerInfo wfi;
 
-        memcpy(&wfi, &ft->fi, sizeof(IOEXFileInfo));
+        memcpy(&wfi, &ft->ti, sizeof(IOEXTrackerInfo));
         deref(ft);
 
         if (!callback(1, &wfi, context))
@@ -3327,6 +3327,97 @@ int IOEX_get_files(IOEXCarrier *w, IOEXFilesIterateCallback *callback, void *con
 
     /* File list is end */
     callback(0, NULL, context);
+
+    return 0;
+}
+
+static void _set_default_file_info(IOEXFileInfo *file_info)
+{
+    assert(file_info);
+
+    memset(file_info->ti.file_key, 0, sizeof(file_info->ti.file_key));
+    strcpy(file_info->ti.file_id, "");
+    strcpy(file_info->ti.file_name, "");
+    strcpy(file_info->ti.file_path, "");
+    file_info->ti.file_index = UINT32_MAX;
+    file_info->ti.friend_number = UINT32_MAX;
+    file_info->direction = IOEXFileTransmissionDirection_Unknown;
+    file_info->status = IOEXFileTransmissionStatus_None;
+    file_info->paused = IOEXFileTransmissionPausedStatus_None;
+    file_info->file_size = 0;
+    file_info->transferred_size = 0;
+}
+
+int IOEX_get_file_info(IOEXCarrier *w, IOEXFileInfo *file_info, const char *file_id)
+{
+    FileTracker *tracker;
+    int receive_send;
+    uint64_t size, transferred;
+    uint8_t status, pause;
+    int rc;
+    if(!w || !file_info || !file_id){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+
+    _set_default_file_info(file_info);
+
+    tracker = find_file_sender_by_id(w, file_id);
+    receive_send = 1;
+    if(tracker == NULL){
+        tracker = find_file_receiver_by_id(w, file_id);
+        receive_send = 0;
+    }
+
+    if(tracker == NULL){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID));
+        return -1;
+    }
+
+    memcpy(&file_info->ti, &tracker->ti, sizeof(file_info->ti));
+
+    rc = dht_file_get_transfer_status(&w->dht, receive_send, tracker->ti.friend_number, tracker->ti.file_index, 
+                &size, &transferred, &status, &pause);
+    if(rc < 0){
+        IOEX_set_error(rc);
+        _set_default_file_info(file_info);
+        return -1;
+    }
+
+    file_info->file_size = size;
+    file_info->transferred_size = transferred;
+    if(receive_send == 0){
+        file_info->direction = IOEXFileTransmissionDirection_Receive;
+    }
+    else{
+        file_info->direction = IOEXFileTransmissionDirection_Send;
+    }
+    switch(status){
+        case 1:
+            file_info->status = IOEXFileTransmissionStatus_Pending;
+            break;
+        case 2:
+            file_info->status = IOEXFileTransmissionStatus_Running;
+            break;
+        case 3:
+            file_info->status = IOEXFileTransmissionStatus_Finished;
+            break;
+        default:
+            file_info->status = IOEXFileTransmissionStatus_None;
+    }
+    switch(pause){
+        case 1:
+            file_info->paused = IOEXFileTransmissionPausedStatus_Us;
+            break;
+        case 2:
+            file_info->paused = IOEXFileTransmissionPausedStatus_Other;
+            break;
+        case 3:
+            file_info->paused = IOEXFileTransmissionPausedStatus_Both;
+            break;
+        default:
+            file_info->paused = IOEXFileTransmissionPausedStatus_None;
+    }
 
     return 0;
 }
@@ -3414,7 +3505,7 @@ int IOEX_send_file_seek(IOEXCarrier *w, const char *file_id, const char *positio
     }
 
     start_position = strtoull(position, NULL, 10);
-    rc = dht_file_send_seek(&w->dht, receiver->fi.friend_number, receiver->fi.file_index, start_position);
+    rc = dht_file_send_seek(&w->dht, receiver->ti.friend_number, receiver->ti.file_index, start_position);
     if(rc < 0){
         IOEX_set_error(rc);
         return -1;
@@ -3462,7 +3553,7 @@ int IOEX_send_file_accept(IOEXCarrier *w, const char *file_id, const char *filen
         return -1;
     }
 
-    rc = dht_file_send_accept(&w->dht, receiver->fi.friend_number, receiver->fi.file_index);
+    rc = dht_file_send_accept(&w->dht, receiver->ti.friend_number, receiver->ti.file_index);
     if(rc < 0){
         IOEX_set_error(rc);
         return -1;
@@ -3493,7 +3584,7 @@ int IOEX_send_file_reject(IOEXCarrier *w, const char *file_id)
 
     remove_file_receiver(w, receiver);
 
-    rc = dht_file_send_reject(&w->dht, receiver->fi.friend_number, receiver->fi.file_index);
+    rc = dht_file_send_reject(&w->dht, receiver->ti.friend_number, receiver->ti.file_index);
     if(rc < 0){
         IOEX_set_error(rc);
         return -1;
@@ -3527,7 +3618,7 @@ int IOEX_send_file_pause(IOEXCarrier *w, const char *file_id)
         return -1;
     }
 
-    rc = dht_file_send_pause(&w->dht, tracker->fi.friend_number, tracker->fi.file_index);
+    rc = dht_file_send_pause(&w->dht, tracker->ti.friend_number, tracker->ti.file_index);
     if(rc < 0){
         IOEX_set_error(rc);
         return -1;
@@ -3561,7 +3652,7 @@ int IOEX_send_file_resume(IOEXCarrier *w, const char *file_id)
         return -1;
     }
 
-    rc = dht_file_send_resume(&w->dht, tracker->fi.friend_number, tracker->fi.file_index);
+    rc = dht_file_send_resume(&w->dht, tracker->ti.friend_number, tracker->ti.file_index);
     if(rc < 0){
         IOEX_set_error(rc);
         return -1;
@@ -3596,7 +3687,7 @@ int IOEX_send_file_cancel(IOEXCarrier *w, const char *file_id)
         remove_file_receiver(w, tracker);
     }
 
-    rc = dht_file_send_cancel(&w->dht, tracker->fi.friend_number, tracker->fi.file_index);
+    rc = dht_file_send_cancel(&w->dht, tracker->ti.friend_number, tracker->ti.file_index);
     if(rc < 0){
         IOEX_set_error(rc);
         return -1;

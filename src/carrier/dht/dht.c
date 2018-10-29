@@ -1059,9 +1059,24 @@ int dht_file_get_file_key(DHT *dht, uint8_t *file_key, uint32_t friend_number, u
 {
     Tox *tox = dht->tox;
     TOX_ERR_FILE_GET error;
+    // TODO: error
     if(!tox_file_get_file_id(tox, friend_number, filenum, file_key, &error)){
         return IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID);
     }
+    return IOEXSUCCESS;
+}
+
+int dht_file_get_transfer_status(DHT *dht, const uint8_t receive_send, const int32_t friendnumber, const uint8_t filenumber, 
+        uint64_t *size, uint64_t *transferred, uint8_t *status, uint8_t *pause)
+{
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_GET error;
+    // TODO: error
+
+    if(!tox_file_get_transfer_status(tox, receive_send, friendnumber, filenumber, size, transferred, status, pause, &error)){
+        return IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID);
+    }
+
     return IOEXSUCCESS;
 }
 
