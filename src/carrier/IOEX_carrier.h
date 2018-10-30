@@ -245,6 +245,20 @@ const char *IOEX_get_version(void);
 
 /**
  * \~English
+ * Get last commit hash of current Carrier node.
+ */
+CARRIER_API
+const char *IOEX_get_last_commit(void);
+
+/**
+ * \~English
+ * Get building timestamp of current Carrier node.
+ */
+CARRIER_API
+const char *IOEX_get_build_time(void);
+
+/**
+ * \~English
  * Carrier log level to control or filter log output.
  */
 typedef enum IOEXLogLevel {

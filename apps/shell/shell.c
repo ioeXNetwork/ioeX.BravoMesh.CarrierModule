@@ -434,6 +434,29 @@ static void clear_screen(IOEXCarrier *w, int argc, char *argv[])
     }
 }
 
+static void get_version(IOEXCarrier *w, int argc, char *argv[])
+{
+    if(argc == 1){
+        output("%s\n", IOEX_get_version());
+        return;
+    }
+    else if(argc == 2){
+        if(strcmp(argv[1], "verbose") == 0){
+            // TODO
+            output("%s-%s-%s\n", IOEX_get_version(), IOEX_get_last_commit(), IOEX_get_build_time());
+            return;
+        }
+        else{
+            output("Invalid command syntax.\n");
+            return;
+        }
+    }
+    else{
+        output("Invalid command syntax.\n");
+        return;
+    }
+}
+
 static void get_address(IOEXCarrier *w, int argc, char *argv[])
 {
     if (argc != 1) {
@@ -1744,6 +1767,7 @@ struct command {
 } commands[] = {
     { "help",       help,                   "help [cmd]" },
     { "clear",      clear_screen,           "clear [log | out]" },
+    { "version",    get_version,            "version [verbose]" },
 
     { "address",    get_address,            "address" },
     { "nodeid",     get_nodeid,             "nodeid" },

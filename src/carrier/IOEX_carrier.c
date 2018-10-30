@@ -55,7 +55,29 @@
 
 const char* IOEX_get_version(void)
 {
-    return "IOEXCarrier-5.0.1";
+#ifdef IOEX_CARRIER_VERSION
+    return IOEX_CARRIER_VERSION;
+#else
+    return "1.0.0";
+#endif
+}
+
+const char* IOEX_get_last_commit(void)
+{
+#ifdef IOEX_CARRIER_LAST_COMMIT
+    return IOEX_CARRIER_LAST_COMMIT;
+#else
+    return "000000";
+#endif
+}
+
+const char* IOEX_get_build_time(void)
+{
+#ifdef IOEX_CARRIER_BUILD_TIME
+    return IOEX_CARRIER_BUILD_TIME;
+#else
+    return "1970/01/01-00:00:00";
+#endif
 }
 
 static bool is_valid_key(const char *key)
