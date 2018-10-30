@@ -3,7 +3,7 @@ include environ/gitlab.mk
 
 GITLAB_PACKAGE_NAME   = c-toxcore
 GITLAB_PACKAGE_URL    = http://$(GITLAB_USERNAME):$(GITLAB_PASSWORD)@git.pin2wall.com/P2PNetwork/$(GITLAB_PACKAGE_NAME).git
-GITLAB_PACKAGE_BRANCH = develop
+GITLAB_PACKAGE_BRANCH = v0.5.0
 SRC_DIR        = $(DEPS_DIR)/$(GITLAB_PACKAGE_NAME)
 
 CONFIG_COMMAND = $(shell scripts/toxcore.sh "command" $(HOST) $(ARCH) $(HOST_COMPILER))
