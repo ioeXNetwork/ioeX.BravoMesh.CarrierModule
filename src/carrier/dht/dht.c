@@ -327,6 +327,33 @@ static inline int __dht_friend_delete_error(TOX_ERR_FRIEND_DELETE code)
     return rc;
 }
 
+static inline int __dht_file_get_error(TOX_ERR_FILE_GET code)
+{
+    int rc;
+    switch (code){
+    case TOX_ERR_FILE_GET_OK:
+        rc = IOEXSUCCESS;
+        break;
+
+    case TOX_ERR_FILE_GET_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+
+    TOX_ERR_FILE_GET_NULL:
+        rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
+        break;
+
+    TOX_ERR_FILE_GET_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_TRACKER_INVALID);
+        break;
+
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
 static inline int __dht_file_send_error(TOX_ERR_FILE_SEND code)
 {
     int rc;
@@ -1082,9 +1109,8 @@ int dht_file_get_file_key(DHT *dht, uint8_t *file_key, uint32_t friend_number, u
 {
     Tox *tox = dht->tox;
     TOX_ERR_FILE_GET error;
-    // TODO: error
     if(!tox_file_get_file_id(tox, friend_number, filenum, file_key, &error)){
-        return IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID);
+        return __dht_file_get_error(error);
     }
     return IOEXSUCCESS;
 }
@@ -1094,10 +1120,8 @@ int dht_file_get_transfer_status(DHT *dht, const uint8_t receive_send, const int
 {
     Tox *tox = dht->tox;
     TOX_ERR_FILE_GET error;
-    // TODO: error
-
     if(!tox_file_get_transfer_status(tox, receive_send, friendnumber, filenumber, size, transferred, status, pause, &error)){
-        return IOEX_GENERAL_ERROR(IOEXERR_FILE_TRACKER_INVALID);
+        return __dht_file_get_error(error);
     }
 
     return IOEXSUCCESS;
