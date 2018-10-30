@@ -13,7 +13,7 @@ MODULES = common carrier session
 all: message install
 
 message:
-	-echo -e "\033[0;31m IMPORTANT:\033[0;33m Make sure update IOEX_CARRIER_VERSION when release!\033[0m"
+	-echo "\033[0;31m IMPORTANT:\033[0;33m Make sure update IOEX_CARRIER_VERSION when release!\033[0m"
 
 install:
 	@for i in $(MODULES) ; do \
