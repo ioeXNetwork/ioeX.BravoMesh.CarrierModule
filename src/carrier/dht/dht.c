@@ -560,11 +560,12 @@ void notify_file_request_cb(Tox *tox, uint32_t friend_number, uint32_t real_file
                             const uint8_t *filename, size_t filename_length, void *context)
 {
     DHTCallbacks *cbs = (DHTCallbacks *)context;
+    TOX_ERR_FILE_GET error;
     uint8_t file_id[TOX_FILE_ID_LENGTH];
 
-    // TODO: add error
-    if(!tox_file_get_file_id(tox, friend_number, real_filenumber, file_id, 0)){
-        vlogE("Received unknown file request: friend_number=%u file_number=%u filename=%s", friend_number, real_filenumber, filename);
+    if(!tox_file_get_file_id(tox, friend_number, real_filenumber, file_id, &error)){
+        vlogE("Received unknown file request: friend_number=%u file_number=%u filename=%s (0x%08x)", friend_number, real_filenumber, filename,
+                __dht_file_get_error(error));
         return;
     }
 
@@ -589,7 +590,7 @@ void notify_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_numb
     }
 
     if(!tox_file_get_transfer_status(tox, receive_send, friend_number, file_number, &size, &transferred, &status, &pause, &error)){
-        vlogE("Failed to find file transfer for friend[%u] file[%u]", friend_number, file_number);
+        vlogE("Failed to find file transfer for friend[%u] file[%u] (0x%08x)", friend_number, file_number, __dht_file_get_error(error));
         return;
     }
 
