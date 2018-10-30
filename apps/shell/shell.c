@@ -1586,6 +1586,23 @@ static void list_files(IOEXCarrier *w, int argc, char *argv[])
     }
 }
 
+static void file_send_query(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 4){
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = IOEX_send_file_query(w, argv[1], argv[2], argv[3]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("File query sent.\n");
+    }
+}
+
 static void file_send_request(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
@@ -1600,7 +1617,7 @@ static void file_send_request(IOEXCarrier *w, int argc, char *argv[])
         output("Invalid request.(0x%8X)\n", IOEX_get_error());
     }
     else{
-        output("File request sent. File id=%s\n", fileid);
+        output("File request sent. File id = %s\n", fileid);
     }
 }
 
@@ -1808,6 +1825,7 @@ struct command {
     { "spfclose",   portforwarding_close,   "spfclose stream pfid" },
     { "scleanup",   session_cleanup,        "scleanup" },
 
+    { "filequery",  file_send_query, 	    "filequery userid filename message" },
     { "filesend",   file_send_request, 	    "filesend userid filename" },
     { "fileseek",   file_send_seek, 	    "fileseek fileid position" },
     { "fileaccept", file_send_accept, 	    "fileaccept fileid newfilename filepath" },
@@ -2077,6 +2095,15 @@ static void invite_request_callback(IOEXCarrier *w, const char *from,
     output("  ireply %s refuse [reason]\n", from);
 }
 
+static void file_queried_callback(IOEXCarrier *w, const char *friendid, const char *filename, 
+                                  const char *message, void *context)
+{
+    output("File query from friend[%s]\n", friendid);
+    output("File name %s with message %s\n", filename, message);
+    output("Reply use following command if your want to send the file:\n");
+    output("  filesend %s <path to the file>\n", friendid);
+}
+
 static void file_request_callback(IOEXCarrier *w, const char *fileid, const char *friendid, const char *filename, 
                                   size_t filesize, void *context)
 {
@@ -2262,6 +2289,7 @@ int main(int argc, char *argv[])
     callbacks.friend_message = message_callback;
     callbacks.friend_invite = invite_request_callback;
 
+    callbacks.file_queried = file_queried_callback;
     callbacks.file_request = file_request_callback;
     callbacks.file_accepted = file_accepted_callback;
     callbacks.file_rejected = file_rejected_callback;

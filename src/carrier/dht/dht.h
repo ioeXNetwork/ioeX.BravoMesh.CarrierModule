@@ -98,6 +98,8 @@ int dht_file_get_file_key(DHT *dht, uint8_t *file_key, uint32_t friend_number, u
 int dht_file_send_request(DHT *dht, uint8_t *fileid, uint32_t friend_number, const char *fullpath,
                           uint32_t *filenum);
 
+int dht_file_send_query(DHT *dht, uint32_t friend_number, const char *filename, const char *message);
+
 int dht_file_send_accept(DHT *dht, uint32_t friend_number, const uint32_t file_number);
 
 int dht_file_send_seek(DHT *dht, uint32_t friend_number, const uint32_t file_number, uint64_t position);

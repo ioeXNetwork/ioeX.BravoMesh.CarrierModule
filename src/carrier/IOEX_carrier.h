@@ -805,6 +805,23 @@ typedef struct IOEXCallbacks {
 
     /**
      * \~English
+     * An application-defined function that process the file query request.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      friendid    [in] The user id from who send the file query request.
+     * @param
+     *      filename    [in] The name of file which is queried by the friend.
+     * @param
+     *      message     [in] Extra message sent by the friend.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*file_queried)(IOEXCarrier *carrier, const char *friendid,
+                         const char *filename, const char *message, void *context);
+    /**
+     * \~English
      * An application-defined function that process the file send request.
      *
      * @param
@@ -1580,6 +1597,27 @@ int IOEX_reply_friend_invite(IOEXCarrier *carrier, const char *to,
  */
 typedef bool IOEXFilesIterateCallback(int direction, const IOEXTrackerInfo *info,
                                       void *context);
+
+/**
+ * \~English
+ * An application-defined function that process the file query request.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      friendid    [in] The user id whom we send the file query to.
+ * @param
+ *      filename    [in] The name of file we are querying for.
+ * @param
+ *      message     [in] Extra message we sent to friend.
+ * @return
+ *      0 if the request successfully send to the friend.
+ *      Otherwise, return -1, and a specific error code can be
+ *      retrieved by calling IOEX_get_error().
+ */
+CARRIER_API
+int IOEX_send_file_query(IOEXCarrier *carrier, const char *friendid, const char *filename, const char *message);
+
 /**
  * \~English
  * An application-defined function that process the file send request.
@@ -1592,7 +1630,7 @@ typedef bool IOEXFilesIterateCallback(int direction, const IOEXTrackerInfo *info
  * @param
  *      id_len      [in] Size of the fileid buffer. It should >= IOEX_MAX_ID_LEN (45)
  * @param
- *      friendid    [in] The user id from who send the file send request.
+ *      friendid    [in] The user id whom we send the file send request to.
  * @param
  *      filename    [in] The name of file which is requested to be sent from friend.
  * @return

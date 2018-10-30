@@ -327,6 +327,33 @@ static inline int __dht_friend_delete_error(TOX_ERR_FRIEND_DELETE code)
     return rc;
 }
 
+static inline int __dht_file_query_error(TOX_ERR_FILE_QUERY code)
+{
+    int rc;
+    switch (code){
+    case TOX_ERR_FILE_QUERY_OK:
+        rc = IOEXSUCCESS;
+        break;
+
+    case TOX_ERR_FILE_QUERY_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+
+    case TOX_ERR_FILE_QUERY_FRIEND_NOT_CONNECTED:
+        rc = IOEX_DHT_ERROR(IOEXERR_FRIEND_OFFLINE);
+        break;
+
+    case TOX_ERR_FILE_QUERY_SENDQ:
+        rc = IOEX_DHT_ERROR(IOEXERR_LIMIT_EXCEEDED);
+        break;
+
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
 static inline int __dht_file_get_error(TOX_ERR_FILE_GET code)
 {
     int rc;
@@ -339,11 +366,11 @@ static inline int __dht_file_get_error(TOX_ERR_FILE_GET code)
         rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
         break;
 
-    TOX_ERR_FILE_GET_NULL:
+    case TOX_ERR_FILE_GET_NULL:
         rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
         break;
 
-    TOX_ERR_FILE_GET_NOT_FOUND:
+    case TOX_ERR_FILE_GET_NOT_FOUND:
         rc = IOEX_DHT_ERROR(IOEXERR_FILE_TRACKER_INVALID);
         break;
 
@@ -572,6 +599,13 @@ void notify_file_request_cb(Tox *tox, uint32_t friend_number, uint32_t real_file
     cbs->notify_file_request(file_id, friend_number, real_filenumber, filename, file_size, cbs->context);
 }
 
+static
+void notify_file_query_cb(Tox *tox, uint32_t friend_number, const char *filename, const char *message, void *context)
+{
+    DHTCallbacks *cbs = (DHTCallbacks *)context;
+    cbs->notify_file_query(friend_number, filename, message, cbs->context);
+}
+
 static 
 void notify_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
                             void *context)
@@ -707,6 +741,7 @@ int dht_new(const uint8_t *savedata, size_t datalen, bool udp_enabled, DHT *dht)
     tox_callback_friend_message(tox, notify_friend_message_cb);
 
     tox_callback_file_recv(tox, notify_file_request_cb);
+    tox_callback_file_recv_query(tox, notify_file_query_cb);
     tox_callback_file_recv_control(tox, notify_file_control_cb);
     tox_callback_file_chunk_request(tox, notify_file_chunk_request_cb);
     tox_callback_file_recv_chunk(tox, notify_file_chunk_receive_cb);
@@ -1123,6 +1158,18 @@ int dht_file_get_transfer_status(DHT *dht, const uint8_t receive_send, const int
     TOX_ERR_FILE_GET error;
     if(!tox_file_get_transfer_status(tox, receive_send, friendnumber, filenumber, size, transferred, status, pause, &error)){
         return __dht_file_get_error(error);
+    }
+
+    return IOEXSUCCESS;
+}
+
+int dht_file_send_query(DHT *dht, uint32_t friend_number, const char *filename, const char *message)
+{
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_QUERY error;
+
+    if(!tox_file_query(tox, friend_number, filename, message, &error)){
+        return __dht_file_query_error(error);
     }
 
     return IOEXSUCCESS;

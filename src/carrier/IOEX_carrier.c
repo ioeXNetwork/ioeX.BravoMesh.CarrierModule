@@ -1911,6 +1911,27 @@ int update_file_receiver_path(FileTracker *receiver, const char *filename, const
 }
 
 static 
+void notify_file_query_cb(uint32_t friend_number, const char *filename, const char *message, void *context)
+{
+    IOEXCarrier *w = (IOEXCarrier *)context;
+    FriendInfo *fi;
+
+    assert(friend_number != UINT32_MAX);
+    assert(filename);
+
+    fi = friends_get(w->friends, friend_number);
+    if (!fi) {
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
+        vlogE("Carrier: Unknown friend number %lu, file query of %s, message %s dropped.", friend_number, filename, message);
+        return;
+    }
+
+    if(w->callbacks.file_queried){
+        w->callbacks.file_queried(w, fi->info.user_info.userid, filename, message, w->context);
+    }
+}
+
+static 
 void notify_file_request_cb(const uint8_t *file_key, uint32_t friend_number, uint32_t file_number, 
                             const uint8_t *filename, uint64_t filesize, void *context)
 {
@@ -2353,6 +2374,7 @@ int IOEX_run(IOEXCarrier *w, int interval)
     w->dht_callbacks.notify_friend_request = notify_friend_request_cb;
     w->dht_callbacks.notify_friend_message = notify_friend_message_cb;
 
+    w->dht_callbacks.notify_file_query = notify_file_query_cb;
     w->dht_callbacks.notify_file_request = notify_file_request_cb;
     w->dht_callbacks.notify_file_accepted = notify_file_accepted_cb;
     w->dht_callbacks.notify_file_rejected = notify_file_rejected_cb;
@@ -3458,6 +3480,39 @@ int IOEX_get_file_info(IOEXCarrier *w, IOEXFileInfo *file_info, const char *file
             break;
         default:
             file_info->paused = IOEXFileTransmissionPausedStatus_None;
+    }
+
+    return 0;
+}
+
+int IOEX_send_file_query(IOEXCarrier *w, const char *friendid, const char *filename, const char *message)
+{
+    uint32_t friend_number;
+    int rc;
+
+    if(!w || !friendid || !message){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+    if(!is_valid_key(friendid)){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
+        return -1;
+    }
+    if(!w->is_ready){
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_READY));
+        return -1;
+    }
+
+    rc = get_friend_number(w, friendid, &friend_number);
+    if(rc < 0){
+        IOEX_set_error(rc);
+        return -1;
+    }
+
+    rc = dht_file_send_query(&w->dht, friend_number, filename, message);
+    if(rc < 0){
+        IOEX_set_error(rc);
+        return -1;
     }
 
     return 0;
