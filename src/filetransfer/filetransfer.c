@@ -27,6 +27,11 @@
 #include <assert.h>
 #include <errno.h>
 
+#ifdef HAVE_ENDIAN_H
+#include <endian.h>
+#define ntohll(x)       be64toh(x)
+#define htonll(x)       htobe64(x)
+#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

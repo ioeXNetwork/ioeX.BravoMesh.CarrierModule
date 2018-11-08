@@ -29,6 +29,11 @@ if(HAVE_WINSOCK2_H)
     add_definitions(-DHAVE_WINSOCK2_H=1)
 endif()
 
+check_include_file(endian.h HAVE_ENDIAN_H)
+if(HAVE_ENDIAN_H)
+    add_definitions(-DHAVE_ENDIAN_H=1)
+endif()
+
 set(SRC
     filetransfer.c
     easyfile.c)
@@ -43,7 +48,7 @@ set(HEADERS
     ela_filetransfer.h)
 
 if(WIN32)
-    set(SYSTEM_LIBS Ws2_32 Iphlpapi)
+    set(SYSTEM_LIBS Ws2_32 )
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(SYSTEM_LIBS pthread m)
 endif()
@@ -103,7 +108,7 @@ if(ENABLE_SHARED)
 
     target_compile_definitions(elafiletransfer-shared PRIVATE CARRIER_DYNAMIC CRYSTAL_DYNAMIC)
     set_target_properties(elafiletransfer-shared PROPERTIES OUTPUT_NAME elafiletransfer)
-    target_link_libraries(elafiletransfer-shared ${LIBS} )
+    target_link_libraries(elafiletransfer-shared ${LIBS} ${SYSTEM_LIBS} )
     add_dependencies(ela-filetransfer elafiletransfer-shared)
 
     install(TARGETS elafiletransfer-shared
