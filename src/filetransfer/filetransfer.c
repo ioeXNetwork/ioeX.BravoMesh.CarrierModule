@@ -27,11 +27,6 @@
 #include <assert.h>
 #include <errno.h>
 
-#ifdef HAVE_ENDIAN_H
-#include <endian.h>
-#define ntohll(x)       be64toh(x)
-#define htonll(x)       htobe64(x)
-#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -43,6 +38,15 @@
 #endif
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
+#endif
+#ifdef HAVE_ENDIAN_H
+#include <endian.h>
+#ifndef ntohll
+#define ntohll(x)       be64toh(x)
+#endif
+#ifndef htonll
+#define htonll(x)       htobe64(x)
+#endif
 #endif
 
 #include <rc_mem.h>
