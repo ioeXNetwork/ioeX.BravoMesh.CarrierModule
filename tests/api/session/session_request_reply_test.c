@@ -19,14 +19,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+ 
 
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
 #include <CUnit/Basic.h>
 
-#include "ela_carrier.h"
-#include "ela_session.h"
+#include "IOEX_carrier.h"
+#include "IOEX_session.h"
 #include "cond.h"
 #include "tests.h"
 #include "test_helper.h"
@@ -37,35 +59,35 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(IOEXCarrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
 static
-void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+void friend_added_cb(IOEXCarrier *w, const IOEXFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(IOEXCarrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(IOEXCarrier *w, const char *friendid,
+                                 IOEXConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
     wakeup(context);
-    wctxt->robot_online = (status == ElaConnectionStatus_Connected);
+    wctxt->robot_online = (status == IOEXConnectionStatus_Connected);
 
     test_log_debug("Robot connection status changed -> %s\n",
                     connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static IOEXCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -96,7 +118,7 @@ static CarrierContext carrier_context = {
 struct SessionContextExtra {
     char remote_sdp[2048];
     size_t sdp_len;
-    char robot_peer_id[(ELA_MAX_ID_LEN + 1) * 2];
+    char robot_peer_id[(IOEX_MAX_ID_LEN + 1) * 2];
 };
 
 static SessionContextExtra session_extra = {
@@ -105,7 +127,7 @@ static SessionContextExtra session_extra = {
     .robot_peer_id = {0}
 };
 
-static void session_request_callback(ElaCarrier *w, const char *from,
+static void session_request_callback(IOEXCarrier *w, const char *from,
                                     const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = (SessionContext *)context;
@@ -122,7 +144,7 @@ static void session_request_callback(ElaCarrier *w, const char *from,
     cond_signal(sctxt->request_cond);
 }
 
-static void session_request_complete_callback(ElaSession *ws, int status,
+static void session_request_complete_callback(IOEXSession *ws, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = (SessionContext *)context;
@@ -135,7 +157,7 @@ static void session_request_complete_callback(ElaSession *ws, int status,
     if (status == 0) {
         int rc;
 
-        rc = ela_session_start(ws, sdp, len);
+        rc = IOEX_session_start(ws, sdp, len);
         CU_ASSERT_TRUE(rc == 0);
     }
     
@@ -158,15 +180,15 @@ static SessionContext session_context = {
     .extra   = &session_extra,
 };
 
-static void stream_on_data(ElaSession *ws, int stream,
+static void stream_on_data(IOEXSession *ws, int stream,
                            const void *data, size_t len, void *context)
 {
     test_log_debug("Stream [%d] received data [%.*s]\n", stream, (int)len,
                    (char*)data);
 }
 
-static void stream_state_changed(ElaSession *ws, int stream,
-                                 ElaStreamState state, void *context)
+static void stream_state_changed(IOEXSession *ws, int stream,
+                                 IOEXStreamState state, void *context)
 {
     StreamContext *stream_ctxt = (StreamContext *)context;
 
@@ -179,7 +201,7 @@ static void stream_state_changed(ElaSession *ws, int stream,
     cond_signal(stream_ctxt->cond);
 }
 
-static ElaStreamCallbacks stream_callbacks = {
+static IOEXStreamCallbacks stream_callbacks = {
     .stream_data = stream_on_data,
     .state_changed = stream_state_changed
 };
@@ -222,7 +244,7 @@ static TestContext test_context = {
     .context_reset = test_context_reset,
 };
 
-static void test_stream_reply_scheme(ElaStreamType stream_type,
+static void test_stream_reply_scheme(IOEXStreamType stream_type,
                     int stream_options, TestContext *context,
                     int (*do_work_cb)(TestContext *))
 {
@@ -233,15 +255,15 @@ static void test_stream_reply_scheme(ElaStreamType stream_type,
     int rc;
     char cmd[32];
     char result[32];
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[IOEX_MAX_ID_LEN + 1];
 
     context->context_reset(context);
 
     rc = add_friend_anyway(context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(IOEX_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_session_init(wctxt->carrier, sctxt->request_cb, sctxt);
+    rc = IOEX_session_init(wctxt->carrier, sctxt->request_cb, sctxt);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     rc = robot_sinit();
@@ -252,7 +274,7 @@ static void test_stream_reply_scheme(ElaStreamType stream_type,
     TEST_ASSERT_TRUE(strcmp(cmd, "sinit") == 0);
     TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
-    ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    IOEX_get_userid(wctxt->carrier, userid, sizeof(userid));
     rc = robot_ctrl("srequest %s %d\n", userid, stream_options);
     TEST_ASSERT_TRUE(rc > 0);
 
@@ -266,40 +288,40 @@ static void test_stream_reply_scheme(ElaStreamType stream_type,
     TEST_ASSERT_TRUE(sctxt->request_received == 1);
     TEST_ASSERT_TRUE(sctxt->extra->sdp_len > 0);
 
-    sctxt->session = ela_session_new(wctxt->carrier, sctxt->extra->robot_peer_id);
+    sctxt->session = IOEX_session_new(wctxt->carrier, sctxt->extra->robot_peer_id);
     TEST_ASSERT_TRUE(sctxt->session != NULL);
 
-    stream_ctxt->stream_id = ela_session_add_stream(sctxt->session,
-                                    ElaStreamType_text, stream_options,
+    stream_ctxt->stream_id = IOEX_session_add_stream(sctxt->session,
+                                    IOEXStreamType_text, stream_options,
                                     stream_ctxt->cbs, stream_ctxt);
     TEST_ASSERT_TRUE(stream_ctxt->stream_id > 0);
 
     cond_wait(stream_ctxt->cond);
-    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_initialized);
-    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_initialized));
+    TEST_ASSERT_TRUE(stream_ctxt->state == IOEXStreamState_initialized);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << IOEXStreamState_initialized));
 
-    rc = ela_session_reply_request(sctxt->session, 0, NULL);
+    rc = IOEX_session_reply_request(sctxt->session, 0, NULL);
     TEST_ASSERT_TRUE(rc == 0);
 
     cond_wait(stream_ctxt->cond);
-    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_transport_ready);
-    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_transport_ready));
+    TEST_ASSERT_TRUE(stream_ctxt->state == IOEXStreamState_transport_ready);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << IOEXStreamState_transport_ready));
 
-    rc = ela_session_start(sctxt->session, sctxt->extra->remote_sdp,
+    rc = IOEX_session_start(sctxt->session, sctxt->extra->remote_sdp,
                                sctxt->extra->sdp_len);
     TEST_ASSERT_TRUE(rc == 0);
 
     cond_wait(stream_ctxt->cond);
 
-    if (stream_ctxt->state != ElaStreamState_connecting &&
-        stream_ctxt->state != ElaStreamState_connected) {
+    if (stream_ctxt->state != IOEXStreamState_connecting &&
+        stream_ctxt->state != IOEXStreamState_connected) {
         // if error, consume ctrl acknowlege from robot.
         wait_robot_ack("%32s %32s", cmd, result);
     }
 
-    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_connecting ||
-                     stream_ctxt->state == ElaStreamState_connected);
-    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_connecting));
+    TEST_ASSERT_TRUE(stream_ctxt->state == IOEXStreamState_connecting ||
+                     stream_ctxt->state == IOEXStreamState_connected);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << IOEXStreamState_connecting));
 
     rc = wait_robot_ack("%32s %32s", cmd, result);
     TEST_ASSERT_TRUE(rc == 2);
@@ -307,45 +329,45 @@ static void test_stream_reply_scheme(ElaStreamType stream_type,
     TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
     cond_wait(stream_ctxt->cond);
-    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_connected);
-    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_connected));
+    TEST_ASSERT_TRUE(stream_ctxt->state == IOEXStreamState_connected);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << IOEXStreamState_connected));
 
     rc = do_work_cb ? do_work_cb(context): 0;
     TEST_ASSERT_TRUE(rc == 0);
 
-    rc = ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+    rc = IOEX_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
     TEST_ASSERT_TRUE(rc == 0);
     stream_ctxt->stream_id = -1;
 
     cond_wait(stream_ctxt->cond);
-    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_closed);
-    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_closed));
+    TEST_ASSERT_TRUE(stream_ctxt->state == IOEXStreamState_closed);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << IOEXStreamState_closed));
 
 cleanup:
     if (stream_ctxt->stream_id > 0) {
-        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+        IOEX_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
         stream_ctxt->stream_id = -1;
     }
 
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        IOEX_session_close(sctxt->session);
         sctxt->session = NULL;
     }
 
-    ela_session_cleanup(wctxt->carrier);
+    IOEX_session_cleanup(wctxt->carrier);
     robot_sfree();
 }
 
 static inline
 void session_request(void)
 {
-    test_stream_scheme(ElaStreamType_text, 0, &test_context, NULL);
+    test_stream_scheme(IOEXStreamType_text, 0, &test_context, NULL);
 }
 
 static inline
 void session_reply(void)
 {
-    test_stream_reply_scheme(ElaStreamType_text, 0, &test_context, NULL);
+    test_stream_reply_scheme(IOEXStreamType_text, 0, &test_context, NULL);
 }
 
 static void test_session_request(void)

@@ -19,6 +19,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+ 
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #ifndef __DHT_WRAPPER_H__
 #define __DHT_WRAPPER_H__
@@ -92,5 +114,22 @@ int dht_friend_delete(DHT *dht, uint32_t friend_number);
 
 int dht_get_random_tcp_relay(DHT *dht, char *tcp_relay, size_t buflen,
                              uint8_t *public_key);
+
+int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath,
+                          uint32_t *filenum);
+
+int dht_file_send_accept(DHT *dht, uint32_t friend_number, const uint32_t file_number);
+
+int dht_file_send_seek(DHT *dht, uint32_t friend_number, const uint32_t file_number, uint64_t position);
+
+int dht_file_send_reject(DHT *dht, uint32_t friend_number, const uint32_t file_number);
+
+int dht_file_send_pause(DHT *dht, uint32_t friend_number, const uint32_t file_number);
+
+int dht_file_send_resume(DHT *dht, uint32_t friend_number, const uint32_t file_number);
+
+int dht_file_send_cancel(DHT *dht, uint32_t friend_number, const uint32_t file_number);
+
+int dht_file_send_chunk(DHT *dht, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data, int len);
 
 #endif // __DHT_WRAPPER_H__

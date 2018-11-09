@@ -9,7 +9,7 @@ INSTALL ?= cp -a
 
 CFLAGS := $(CFLAGS) -I$(INSTALL_INCLUDE_PATH) -I../../src/common  -fPIC -Wall  -Wstrict-prototypes -Wwrite-strings
 
-LIBS := $(LIBS) -lelacommon -lelacarrier -lelasession -lncurses -lconfig
+LIBS := $(LIBS) -lIOEXcommon -lIOEXcarrier -lIOEXsession -lncurses -lconfig
 
 ifeq (, $(findstring $(HOST), Darwin iOS))
 	LDFLAGS = -Wl,-rpath-link=$(INSTALL_LIBRARY_PATH)
@@ -20,9 +20,9 @@ OBJS = shell.o config.o
 
 .PHONY: all clean install
 
-all: elashell
+all: IOEXshell
 
-elashell: $(OBJS)
+IOEXshell: $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS) -L$(INSTALL_LIBRARY_PATH) $(LIBS)
 
 .c.o:
@@ -31,5 +31,5 @@ elashell: $(OBJS)
 install: all
 
 clean:
-	rm -rf elashell *.o
+	rm -rf IOEXshell *.o
 

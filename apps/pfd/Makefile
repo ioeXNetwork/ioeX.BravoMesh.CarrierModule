@@ -9,15 +9,15 @@ INSTALL ?= cp -a
 
 CFLAGS := $(CFLAGS) -I../../src/common -I$(INSTALL_INCLUDE_PATH) -fPIC -Wall  -Wstrict-prototypes -Wwrite-strings
 
-LIBS = -lelacommon -lelacarrier -lelasession -lsodium -lconfig -lpthread
+LIBS = -lIOEXcommon -lIOEXcarrier -lIOEXsession -lsodium -lconfig -lpthread
 
 OBJS = pfd.o config.o
 
 .PHONY: all clean install
 
-all: elapfd
+all: IOEXpfd
 
-elapfd: $(OBJS)
+IOEXpfd: $(OBJS)
 	$(CC) -o $@ $(OBJS) -L$(INSTALL_LIBRARY_PATH) $(LIBS)
 
 .c.o:
@@ -26,4 +26,4 @@ elapfd: $(OBJS)
 install: all
 
 clean:
-	rm -rf elapfd *.o
+	rm -rf IOEXpfd *.o

@@ -1,3 +1,47 @@
+/*
+ * Copyright (c) 2018 Elastos Foundation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+ 
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -7,7 +51,7 @@
 #include <libconfig.h>
 #include <rc_mem.h>
 
-#include <ela_carrier.h>
+#include <IOEX_carrier.h>
 
 #include "config.h"
 
@@ -283,8 +327,8 @@ PFConfig *load_config(const char *config_file)
 
     rc = config_lookup_bool(&cfg, "plain", &intopt);
     if (rc && intopt)
-        config->options |= ELA_STREAM_PLAIN;
-    config->options |= ELA_STREAM_RELIABLE;
+        config->options |= IOEX_STREAM_PLAIN;
+    config->options |= IOEX_STREAM_RELIABLE;
 
     setting = config_lookup(&cfg, "services");
     if (!setting) {
@@ -397,7 +441,7 @@ PFConfig *load_config(const char *config_file)
                 return NULL;
             }
 
-            if (!ela_id_is_valid(stropt)) {
+            if (!IOEX_id_is_valid(stropt)) {
                 fprintf(stderr, "User id '%s' is invalid in users list", stropt);
                 config_destroy(&cfg);
                 deref(config);

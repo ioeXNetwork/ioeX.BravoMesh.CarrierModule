@@ -19,6 +19,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -176,13 +197,13 @@ static void pseudo_tcp_socket_opened(PseudoTcpSocket *sock, void *user_data)
 
     vlogD("Stream: %d pseudo Tcp socket opened.", tcp->base.stream->id);
 
-    handler->prev->on_state_changed(handler->prev, ElaStreamState_connected);
+    handler->prev->on_state_changed(handler->prev, IOEXStreamState_connected);
 }
 
 static void pseudo_tcp_socket_readable(PseudoTcpSocket *sock, void *user_data)
 {
     ReliableHandler *handler = (ReliableHandler *)user_data;
-    ElaStream *s = handler->base.stream;
+    IOEXStream *s = handler->base.stream;
     FlexBuffer *buf = flex_buffer(FLEX_BUFFER_MAX_LEN, FLEX_PADDING_LEN);
 
     vlogT("Stream: %d pseudo Tcp socket readable.", s->id);
@@ -268,10 +289,10 @@ static PseudoTcpWriteResult pseudo_tcp_socket_write_packet(PseudoTcpSocket *sock
     ReliableHandler *tcp = (ReliableHandler *)user_data;
     StreamHandler *handler = &tcp->base;
 
-    if (tcp->base.stream->state == ElaStreamState_connected ||
-        tcp->base.stream->state == ElaStreamState_connecting) {
+    if (tcp->base.stream->state == IOEXStreamState_connected ||
+        tcp->base.stream->state == IOEXStreamState_connecting) {
         /* Send the segment. stream_write_internal() returns
-         * ELA_GENERAL_ERROR(ELAERR_BUSY) on busy; in that
+         * IOEX_GENERAL_ERROR(IOEXERR_BUSY) on busy; in that
          * case the segment is not sent on the wire, but we return WR_SUCCESS
          * anyway. This effectively drops the segment. The pseudo-TCP state machine
          * will eventually pick up this loss and go into recovery mode, reducing
@@ -282,7 +303,7 @@ static PseudoTcpWriteResult pseudo_tcp_socket_write_packet(PseudoTcpSocket *sock
 
         buf = flex_buffer_from(FLEX_PADDING_LEN, buffer, len);
         rc = handler->next->write(handler->next, buf);
-        if (rc > 0 || rc == ELA_GENERAL_ERROR(ELAERR_BUSY)) {
+        if (rc > 0 || rc == IOEX_GENERAL_ERROR(IOEXERR_BUSY)) {
             return WR_SUCCESS; //TODO:
         }
     } else {
@@ -319,7 +340,7 @@ static int reliable_handler_prepare(StreamHandler *base)
 
     handler->sock = pseudo_tcp_socket_new(1, &pseudo_tcp_callbacks);
     if (!handler->sock)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     pseudo_tcp_socket_notify_mtu(handler->sock, DEFAULT_TCP_MTU);
 
@@ -377,8 +398,8 @@ ssize_t reliable_handler_write(StreamHandler *base, FlexBuffer *buf)
     assert(base);
     assert(handler->sock);
 
-    if(base->stream->state != ElaStreamState_connected)
-        return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+    if(base->stream->state != IOEXStreamState_connected)
+        return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
 
     len = flex_buffer_size(buf);
 
@@ -398,7 +419,7 @@ ssize_t reliable_handler_write(StreamHandler *base, FlexBuffer *buf)
                       base->stream->id, error);
 
                 reliable_handler_stop(base, error);
-                return (ssize_t)ELA_SYS_ERROR(error);
+                return (ssize_t)IOEX_SYS_ERROR(error);
             } else {
                 vlogT("Stream: %d reliable handler busy, retry in %d microseconds.",
                       base->stream->id, retry_delay);
@@ -449,7 +470,7 @@ void reliable_handler_on_state_changed(StreamHandler *base, int state)
     assert(base);
     assert(base->prev);
 
-    if (state == ElaStreamState_connected) {
+    if (state == IOEXStreamState_connected) {
         if (pseudo_tcp_socket_connect(handler->sock)) {
             vlogD("Stream: %d pseudo TCP socket connected.", base->stream->id);
             reliable_handler_adjust_clock(handler);
@@ -478,14 +499,14 @@ static void reliable_handler_destroy(void *p)
     vlogD("Stream: %d reliable handler destroyed.", handler->base.stream->id);
 }
 
-int reliable_handler_create(ElaStream *s, StreamHandler **handler)
+int reliable_handler_create(IOEXStream *s, StreamHandler **handler)
 {
     ReliableHandler *_handler;
 
     _handler = (ReliableHandler *)rc_zalloc(sizeof(ReliableHandler),
                                             reliable_handler_destroy);
     if (!_handler)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     _handler->base.name = "Reliable Handler";
     _handler->base.stream = s;

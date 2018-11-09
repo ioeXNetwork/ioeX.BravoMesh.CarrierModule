@@ -19,13 +19,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <CUnit/Basic.h>
 
-#include "ela_carrier.h"
+#include "IOEX_carrier.h"
 #include "cond.h"
 #include "tests.h"
 #include "test_helper.h"
@@ -47,34 +68,34 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(IOEXCarrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(IOEXCarrier *w, const IOEXFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(IOEXCarrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(IOEXCarrier *w, const char *friendid,
+                                 IOEXConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
     wakeup(context);
-    wctxt->robot_online = (status == ElaConnectionStatus_Connected);
+    wctxt->robot_online = (status == IOEXConnectionStatus_Connected);
 
     test_log_debug("Robot connection status changed -> %s\n",
                     connection_str(status));
 }
 
-static void friend_message_cb(ElaCarrier *w, const char *from, const void *msg, size_t len,
+static void friend_message_cb(IOEXCarrier *w, const char *from, const void *msg, size_t len,
                               void *context)
 {
     CarrierContextExtra *extra = ((CarrierContext *)context)->extra;
@@ -86,7 +107,7 @@ static void friend_message_cb(ElaCarrier *w, const char *from, const void *msg, 
     wakeup(context);
 }
 
-static ElaCallbacks callbacks = {
+static IOEXCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -134,10 +155,10 @@ static void test_send_message_to_friend(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(IOEX_is_friend(wctxt->carrier, robotid));
 
     const char* out = "message-test";
-    rc = ela_send_friend_message(wctxt->carrier, robotid, out, strlen(out) + 1);
+    rc = IOEX_send_friend_message(wctxt->carrier, robotid, out, strlen(out) + 1);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     char in[64];
@@ -150,16 +171,16 @@ static void test_send_message_from_friend(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[IOEX_MAX_ID_LEN + 1];
     int rc;
 
     test_context.context_reset(&test_context);
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(IOEX_is_friend(wctxt->carrier, robotid));
 
-    ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    IOEX_get_userid(wctxt->carrier, userid, sizeof(userid));
     const char* msg = "message-test";
 
     rc = robot_ctrl("fmsg %s %s\n", userid, msg);
@@ -186,29 +207,29 @@ static void test_send_message_to_stranger(void)
 
     rc = remove_friend_anyway(&test_context, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_FALSE_FATAL(IOEX_is_friend(wctxt->carrier, robotid));
 
     const char* msg = "test-message";
-    rc = ela_send_friend_message(wctxt->carrier, robotid, msg, strlen(msg));
+    rc = IOEX_send_friend_message(wctxt->carrier, robotid, msg, strlen(msg));
     CU_ASSERT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(IOEX_get_error(), IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
 }
 
 static void test_send_message_to_self(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    char userid[ELA_MAX_ID_LEN + 1];
-    char nodeid[ELA_MAX_ID_LEN + 1];
+    char userid[IOEX_MAX_ID_LEN + 1];
+    char nodeid[IOEX_MAX_ID_LEN + 1];
     const char* msg = "test-message";
     int rc;
 
     test_context.context_reset(&test_context);
 
-    (void)ela_get_userid(wctxt->carrier, userid, sizeof(userid));
-    (void)ela_get_nodeid(wctxt->carrier, nodeid, sizeof(nodeid));
-    rc = ela_send_friend_message(wctxt->carrier, userid, msg, strlen(msg));
+    (void)IOEX_get_userid(wctxt->carrier, userid, sizeof(userid));
+    (void)IOEX_get_nodeid(wctxt->carrier, nodeid, sizeof(nodeid));
+    rc = IOEX_send_friend_message(wctxt->carrier, userid, msg, strlen(msg));
     CU_ASSERT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL_FATAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    CU_ASSERT_EQUAL_FATAL(IOEX_get_error(), IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
 }
 
 static CU_TestInfo cases[] = {

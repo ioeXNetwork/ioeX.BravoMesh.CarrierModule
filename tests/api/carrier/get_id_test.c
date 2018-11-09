@@ -19,21 +19,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+ 
 
 #include <stdlib.h>
 #include <CUnit/Basic.h>
 
-#include "ela_carrier.h"
+#include "IOEX_carrier.h"
 #include "cond.h"
 #include "tests.h"
 #include "test_helper.h"
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(IOEXCarrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static ElaCallbacks callbacks = {
+static IOEXCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -69,36 +91,36 @@ static TestContext test_context = {
 static void test_get_address(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    char addr[ELA_MAX_ADDRESS_LEN + 1];
+    char addr[IOEX_MAX_ADDRESS_LEN + 1];
     char *p;
 
-    p = ela_get_address(wctxt->carrier, addr, sizeof(addr));
+    p = IOEX_get_address(wctxt->carrier, addr, sizeof(addr));
     CU_ASSERT_PTR_NOT_NULL(p);
-    CU_ASSERT_TRUE(ela_address_is_valid(addr));
+    CU_ASSERT_TRUE(IOEX_address_is_valid(addr));
 }
 
 static void test_get_nodeid(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    char nodeid[ELA_MAX_ID_LEN + 1];
+    char nodeid[IOEX_MAX_ID_LEN + 1];
     char *p;
 
-    p = ela_get_nodeid(wctxt->carrier, nodeid, sizeof(nodeid));
+    p = IOEX_get_nodeid(wctxt->carrier, nodeid, sizeof(nodeid));
     CU_ASSERT_PTR_NOT_NULL(p);
     CU_ASSERT_PTR_EQUAL(p, nodeid);
-    CU_ASSERT_TRUE(ela_id_is_valid(nodeid));
+    CU_ASSERT_TRUE(IOEX_id_is_valid(nodeid));
 }
 
 static void test_get_userid(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[IOEX_MAX_ID_LEN + 1];
     char *p;
 
-    p = ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    p = IOEX_get_userid(wctxt->carrier, userid, sizeof(userid));
     CU_ASSERT_PTR_NOT_NULL(p);
     CU_ASSERT_PTR_EQUAL(p, userid);
-    CU_ASSERT_TRUE(ela_id_is_valid(userid));
+    CU_ASSERT_TRUE(IOEX_id_is_valid(userid));
 }
 
 static CU_TestInfo cases[] = {

@@ -1,4 +1,4 @@
-LIBNAME = libelacarrier
+LIBNAME = libIOEXcarrier
 
 PREFIX ?= /usr/local
 INCLUDE_PATH ?= include
@@ -13,9 +13,9 @@ INSTALL_BINARY_PATH  = $(DESTDIR)$(PREFIX)/$(BINARY_PATH)
 INSTALL ?= cp -a
 FLATCC  ?= flatcc
 
-CFLAGS := $(CFLAGS) -DCARRIER_BUILD -DELASTOS_BUILD -I. -I../common -Idht -I$(INSTALL_INCLUDE_PATH) -fvisibility=hidden -fPIC -Wall  -Wstrict-prototypes -Wwrite-strings
+CFLAGS := $(CFLAGS) -DCARRIER_BUILD -DIOEX_BUILD -I. -I../common -Idht -I$(INSTALL_INCLUDE_PATH) -fvisibility=hidden -fPIC -Wall  -Wstrict-prototypes -Wwrite-strings
 LDFLAGS := $(LDFLAGS) -fvisibility=hidden
-LIBS   := -lelacommon -ltoxcore -lsodium -lm -lflatccrt
+LIBS   := -lIOEXcommon -ltoxcore -lsodium -lm -lflatccrt
 
 ifneq (, $(findstring $(HOST), Darwin iOS))
 	CFLAGS := $(CFLAGS) -Wno-pointer-sign
@@ -42,16 +42,12 @@ else
 	DYLIBNAME = $(LIBNAME).so
 endif
 
-ifeq ($(HOST), iOS)
-	LDFLAGS := $(LDFLAGS) -install_name @rpath/$(DYLIBNAME)
-endif
+IOEXcp_generated.h: IOEXcp.fbs
+	${FLATCC} --outfile $@ -a $< 
 
-elacp_generated.h: elacp.fbs
-	${FLATCC} --outfile $@ -a $<
+IOEXcp.o : IOEXcp_generated.h
 
-elacp.o : elacp_generated.h
-
-SRCS = ela_carrier.c elacp.c dht/dht.c
+SRCS = IOEX_carrier.c IOEXcp.c dht/dht.c
 
 OBJS = $(SRCS:.c=.o)
 
@@ -60,7 +56,7 @@ LOBJS = $(SRCS:.c=.lo)
 .SUFFIXES:
 .SUFFIXES: .c .lo .o
 
-HEADERS = ela_carrier.h
+HEADERS = IOEX_carrier.h
 
 .PHONY: all clean install
 
@@ -86,6 +82,6 @@ install: all
 
 clean:
 	rm -rf $(DYLIBNAME) $(STLIBNAME)
-	rm -rf elacp_generated.h
+	rm -rf IOEXcp_generated.h
 	rm -rf *.o *.lo
 	rm -rf dht/*.o dht/*.lo

@@ -19,6 +19,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,8 +52,8 @@
 #include <linkedlist.h>
 #include <vlog.h>
 
-#include "ela_session.h"
-#include "ela_turnserver.h"
+#include "IOEX_session.h"
+#include "IOEX_turnserver.h"
 #include "portforwarding.h"
 #include "services.h"
 #include "session.h"
@@ -48,7 +69,7 @@ static const char *extension_name = "session";
 #if defined(__ANDROID__)
 extern int PJ_JNI_OnLoad(void *vm, void* reserved);
 
-bool ela_session_jni_onload(void *vm, void *reserved)
+bool IOEX_session_jni_onload(void *vm, void *reserved)
 {
     int rc;
 
@@ -57,7 +78,7 @@ bool ela_session_jni_onload(void *vm, void *reserved)
 }
 #endif
 
-static void friend_invite(ElaCarrier *w, const char *from, const char *sdp,
+static void friend_invite(IOEXCarrier *w, const char *from, const char *sdp,
                           size_t len, void *context)
 {
     SessionExtension *ext;
@@ -74,7 +95,7 @@ static void friend_invite(ElaCarrier *w, const char *from, const char *sdp,
         ext->request_callback(w, from, sdp, len, ext->context);
 }
 
-static void remove_transport(ElaTransport *);
+static void remove_transport(IOEXTransport *);
 
 static void extension_destroy(void *p)
 {
@@ -90,13 +111,13 @@ static void extension_destroy(void *p)
 
 static int add_transport(SessionExtension *ext)
 {
-    ElaTransport *transport;
+    IOEXTransport *transport;
     int rc;
 
     assert(ext);
 
     if (ext->transport)
-        return ELA_GENERAL_ERROR(ELAERR_ALREADY_EXIST);
+        return IOEX_GENERAL_ERROR(IOEXERR_ALREADY_EXIST);
 
     rc = ext->create_transport(&transport);
     if (rc < 0)
@@ -105,7 +126,7 @@ static int add_transport(SessionExtension *ext)
     transport->workers = list_create(1, NULL);
     if (!transport->workers) {
         deref(transport);
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
     }
 
     transport->ext = ext;
@@ -114,13 +135,13 @@ static int add_transport(SessionExtension *ext)
     return 0;
 }
 
-int ela_session_init(ElaCarrier *w, ElaSessionRequestCallback *callback, void *context)
+int IOEX_session_init(IOEXCarrier *w, IOEXSessionRequestCallback *callback, void *context)
 {
     SessionExtension *ext;
     int rc;
 
     if (!w) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
@@ -132,7 +153,7 @@ int ela_session_init(ElaCarrier *w, ElaSessionRequestCallback *callback, void *c
     ext = (SessionExtension *)rc_zalloc(sizeof(SessionExtension),
                                            extension_destroy);
     if (!ext) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY));
         return -1;
     }
 
@@ -147,14 +168,14 @@ int ela_session_init(ElaCarrier *w, ElaSessionRequestCallback *callback, void *c
     rc = ids_heap_init((IdsHeap *)&ext->stream_ids, MAX_STREAM_ID);
     if (rc < 0) {
         deref(ext);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY));
         return -1;
     }
 
     rc = add_transport(ext);
     if (rc < 0) {
         deref(ext);
-        ela_set_error(rc);
+        IOEX_set_error(rc);
         return -1;
     }
 
@@ -166,7 +187,7 @@ int ela_session_init(ElaCarrier *w, ElaSessionRequestCallback *callback, void *c
     return rc;
 }
 
-static void remove_transport(ElaTransport *transport)
+static void remove_transport(IOEXTransport *transport)
 {
     ListIterator it;
 
@@ -195,7 +216,7 @@ restop_workers:
     deref(transport);
 }
 
-void ela_session_cleanup(ElaCarrier *w)
+void IOEX_session_cleanup(IOEXCarrier *w)
 {
     SessionExtension *ext;
 
@@ -217,7 +238,7 @@ void ela_session_cleanup(ElaCarrier *w)
 
 void transport_base_destroy(void *p)
 {
-    ElaTransport *transport = (ElaTransport *)p;
+    IOEXTransport *transport = (IOEXTransport *)p;
 
     if (transport->workers)
         deref(transport->workers);
@@ -227,7 +248,7 @@ void transport_base_destroy(void *p)
 
 void session_base_destroy(void *p)
 {
-    ElaSession *ws = (ElaSession *)p;
+    IOEXSession *ws = (IOEXSession *)p;
 
     if (ws->streams)
         deref(ws->streams);
@@ -244,56 +265,56 @@ void session_base_destroy(void *p)
         free(ws->to);
 }
 
-ElaSession *ela_session_new(ElaCarrier *w, const char *address)
+IOEXSession *IOEX_session_new(IOEXCarrier *w, const char *address)
 {
     SessionExtension *ext;
-    ElaSession *ws;
-    ElaTransport *transport;
+    IOEXSession *ws;
+    IOEXTransport *transport;
     IceTransportOptions opts;
-    ElaTurnServer turn_server;
+    IOEXTurnServer turn_server;
     int rc;
 
     if (!w || !address) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return NULL;
     }
 
     ext = w->extension;
     if (!ext) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return NULL;
     }
 
-    if (!ela_is_friend(w, address)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    if (!IOEX_is_friend(w, address)) {
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         vlogE("Session: %s is not friend yet.", address);
         return NULL;
     }
 
     transport = ext->transport;
     if (!transport) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         vlogE("Session: Transport not intialized yet.");
         return NULL;
     }
 
     rc = transport->create_session(transport, &ws);
     if (rc != 0) {
-        ela_set_error(rc);
+        IOEX_set_error(rc);
         return NULL;
     }
 
     ws->streams = list_create(1, NULL);
     if (!ws->streams) {
         deref(ws);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY));
         return NULL;
     }
 
     ws->transport = transport;
     ws->to = strdup(address);
 
-    rc = ela_get_turn_server(w, &turn_server);
+    rc = IOEX_get_turn_server(w, &turn_server);
     if (rc < 0) {
         deref(ws);
         return NULL;
@@ -310,7 +331,7 @@ ElaSession *ela_session_new(ElaCarrier *w, const char *address)
     rc = transport->create_worker(transport, &opts, &ws->worker);
     if (rc < 0) {
         deref(ws);
-        ela_set_error(rc);
+        IOEX_set_error(rc);
         return NULL;
     }
     ws->worker->le.data = ws->worker;
@@ -318,7 +339,7 @@ ElaSession *ela_session_new(ElaCarrier *w, const char *address)
     rc = ws->init(ws);
     if (rc < 0) {
         deref(ws);
-        ela_set_error(rc);
+        IOEX_set_error(rc);
         return NULL;
     }
 
@@ -329,15 +350,15 @@ ElaSession *ela_session_new(ElaCarrier *w, const char *address)
     return ws;
 }
 
-char *ela_session_get_peer(ElaSession *ws, char *peer, size_t size)
+char *IOEX_session_get_peer(IOEXSession *ws, char *peer, size_t size)
 {
     if (!ws || !peer || !size) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return NULL;
     }
 
     if (size <= strlen(ws->to)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_BUFFER_TOO_SMALL));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_BUFFER_TOO_SMALL));
         return NULL;
     }
 
@@ -345,18 +366,18 @@ char *ela_session_get_peer(ElaSession *ws, char *peer, size_t size)
     return peer;
 }
 
-void ela_session_set_userdata(ElaSession *ws, void *userdata)
+void IOEX_session_set_userdata(IOEXSession *ws, void *userdata)
 {
     if (ws)
         ws->userdata = userdata;
 }
 
-void *ela_session_get_userdata(ElaSession *ws)
+void *IOEX_session_get_userdata(IOEXSession *ws)
 {
     return ws ? ws->userdata : NULL;
 }
 
-static void session_internal_close(ElaSession *ws)
+static void session_internal_close(IOEXSession *ws)
 {
     ListIterator it;
     assert(ws);
@@ -364,7 +385,7 @@ static void session_internal_close(ElaSession *ws)
 restop:
     list_iterate(ws->streams, &it);
     while (list_iterator_has_next(&it)) {
-        ElaStream *s;
+        IOEXStream *s;
         int rc;
 
         rc = list_iterator_next(&it, (void **)&s);
@@ -392,7 +413,7 @@ restop:
     memset(ws->crypto.key, 0, sizeof(ws->crypto.key));
 }
 
-void ela_session_close(ElaSession *ws)
+void IOEX_session_close(IOEXSession *ws)
 {
     if (ws) {
         vlogD("Session: Closing session to %s.", ws->to);
@@ -404,28 +425,28 @@ void ela_session_close(ElaSession *ws)
    }
 }
 
-static void friend_invite_response(ElaCarrier *w, const char *from,
+static void friend_invite_response(IOEXCarrier *w, const char *from,
                                    int status, const char *reason,
                                    const void *sdp, size_t len, void *context)
 {
-    ElaSession *ws = (ElaSession*)context;
+    IOEXSession *ws = (IOEXSession*)context;
 
     if (ws->complete_callback) {
         ws->complete_callback(ws, status, reason, (const char *)sdp, len, ws->context);
     }
 }
 
-int ela_session_request(ElaSession *ws,
-        ElaSessionRequestCompleteCallback *callback, void *context)
+int IOEX_session_request(IOEXSession *ws,
+        IOEXSessionRequestCompleteCallback *callback, void *context)
 {
-    ElaCarrier *w;
+    IOEXCarrier *w;
     int rc = 0;
     ListIterator iterator;
     char sdp[SDP_MAX_LEN];
     char *ext_to;
 
     if (!ws || !callback) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
@@ -433,13 +454,13 @@ int ela_session_request(ElaSession *ws,
     assert(w);
 
     if (list_size(ws->streams) == 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_WRONG_STATE));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE));
         return -1;
     }
 
     ws->offerer = 1;
     if (!ws->set_offer(ws, true)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_WRONG_STATE));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE));
         return -1;
     }
 
@@ -450,7 +471,7 @@ int ela_session_request(ElaSession *ws,
 reprepare:
     list_iterate(ws->streams, &iterator);
     while (list_iterator_has_next(&iterator)) {
-        ElaStream *s;
+        IOEXStream *s;
 
         rc = list_iterator_next(&iterator, (void **)&s);
         if (rc == 0)
@@ -463,7 +484,7 @@ reprepare:
         deref(s);
 
         if (rc != 0) {
-            ela_set_error(rc);
+            IOEX_set_error(rc);
             return -1;
         }
     }
@@ -471,7 +492,7 @@ reprepare:
     rc = ws->encode_local_sdp(ws, sdp, sizeof(sdp));
     if (rc < 0) {
         vlogE("Session: Encode local SDP failed(0x%x).", rc);
-        ela_set_error(rc);
+        IOEX_set_error(rc);
         return -1;
     }
     // IMPORTANT: add terminal null
@@ -482,12 +503,12 @@ reprepare:
     ws->complete_callback = callback;
     ws->context = context;
 
-    ext_to = (char *)alloca(ELA_MAX_ID_LEN + strlen(extension_name) + 2);
+    ext_to = (char *)alloca(IOEX_MAX_ID_LEN + strlen(extension_name) + 2);
     strcpy(ext_to, ws->to);
     strcat(ext_to, ":");
     strcat(ext_to, extension_name);
 
-    rc = ela_invite_friend(w, ext_to, sdp, rc + 1,
+    rc = IOEX_invite_friend(w, ext_to, sdp, rc + 1,
                            friend_invite_response, (void *)ws);
 
     vlogD("Session: Session request to %s %s.", ws->to,
@@ -496,10 +517,10 @@ reprepare:
     return rc;
 }
 
-int ela_session_reply_request(ElaSession *ws,
+int IOEX_session_reply_request(IOEXSession *ws,
                               int status, const char* reason)
 {
-    ElaCarrier *w;
+    IOEXCarrier *w;
     int rc = 0;
     char sdp[SDP_MAX_LEN];
     char *local_sdp = NULL;
@@ -507,7 +528,7 @@ int ela_session_reply_request(ElaSession *ws,
     char *ext_to;
 
     if (!ws || (status != 0 && !reason)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
@@ -516,7 +537,7 @@ int ela_session_reply_request(ElaSession *ws,
 
     ws->offerer = 0;
     if (!ws->set_offer(ws, false)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_WRONG_STATE));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE));
         return -1;
     }
 
@@ -528,14 +549,14 @@ int ela_session_reply_request(ElaSession *ws,
         ListIterator iterator;
 
         if (list_size(ws->streams) == 0) {
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_WRONG_STATE));
+            IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE));
             return -1;
         }
 
 reprepare:
         list_iterate(ws->streams, &iterator);
         while (list_iterator_has_next(&iterator)) {
-            ElaStream *s;
+            IOEXStream *s;
 
             rc = list_iterator_next(&iterator, (void **)&s);
             if (rc == 0)
@@ -548,7 +569,7 @@ reprepare:
             deref(s);
 
             if (rc != 0) {
-                ela_set_error(rc);
+                IOEX_set_error(rc);
                 return -1;
             }
         }
@@ -556,7 +577,7 @@ reprepare:
         rc = ws->encode_local_sdp(ws, sdp, sizeof(sdp));
         if (rc < 0) {
             vlogE("Session: Encode local SDP failed(0x%x).", rc);
-            ela_set_error(rc);
+            IOEX_set_error(rc);
             return -1;
         }
         // IMPORTANT: add terminal null
@@ -568,12 +589,12 @@ reprepare:
         sdp_len = rc + 1;
     }
 
-    ext_to = (char *)alloca(ELA_MAX_ID_LEN + strlen(extension_name) + 2);
+    ext_to = (char *)alloca(IOEX_MAX_ID_LEN + strlen(extension_name) + 2);
     strcpy(ext_to, ws->to);
     strcat(ext_to, ":");
     strcat(ext_to, extension_name);
 
-    rc = ela_reply_friend_invite(w, ext_to, status, reason,
+    rc = IOEX_reply_friend_invite(w, ext_to, status, reason,
                                  local_sdp, sdp_len);
 
     vlogD("Session: Session reply to %s %s.", ws->to,
@@ -582,18 +603,18 @@ reprepare:
     return rc;
 }
 
-int ela_session_start(ElaSession *ws, const char *sdp, size_t len)
+int IOEX_session_start(IOEXSession *ws, const char *sdp, size_t len)
 {
     int rc;
     ListIterator iterator;
 
     if (!ws || !sdp || !len) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     if (list_size(ws->streams) == 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_WRONG_STATE));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE));
         return -1;
     }
 
@@ -606,7 +627,7 @@ int ela_session_start(ElaSession *ws, const char *sdp, size_t len)
 recheck:
     list_iterate(ws->streams, &iterator);
     while (list_iterator_has_next(&iterator)) {
-        ElaStream *s;
+        IOEXStream *s;
         bool ready;
 
         rc = list_iterator_next(&iterator, (void **)&s);
@@ -616,12 +637,12 @@ recheck:
         if (rc == -1)
             goto recheck;
 
-        ready = (s->state == ElaStreamState_transport_ready);
+        ready = (s->state == IOEXStreamState_transport_ready);
         deref(s);
 
         if (!ready) {
             deref(ws);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_WRONG_STATE));
+            IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE));
             return -1;
         }
     }
@@ -631,14 +652,14 @@ recheck:
         vlogE("Session: Session to %s can not apply remote SDP.)", ws->to);
         vlogT("Session: Wrong SDP is: [%.*s].", (int)(len - 1), sdp);
         deref(ws);
-        ela_set_error(rc);
+        IOEX_set_error(rc);
         return -1;
     }
 
 restart:
     list_iterate(ws->streams, &iterator);
     while (list_iterator_has_next(&iterator)) {
-        ElaStream *s;
+        IOEXStream *s;
 
         rc = list_iterator_next(&iterator, (void **)&s);
         if (rc == 0)
@@ -650,7 +671,7 @@ restart:
         if (!s->deactivate)
             s->pipeline.start(&s->pipeline);
         else
-            s->fire_state_changed(s, ElaStreamState_deactivated);
+            s->fire_state_changed(s, IOEXStreamState_deactivated);
 
         deref(s);
     }
@@ -662,7 +683,7 @@ restart:
 
 void stream_base_destroy(void *p)
 {
-    ElaStream *s = (ElaStream *)p;
+    IOEXStream *s = (IOEXStream *)p;
 
     if (s->pipeline.next)
         deref(s->pipeline.next);
@@ -676,7 +697,7 @@ void stream_base_destroy(void *p)
 static
 void stream_base_on_data(StreamHandler *handler, FlexBuffer *buf)
 {
-    ElaStream *s = (ElaStream *)handler;
+    IOEXStream *s = (IOEXStream *)handler;
 
     if (s->callbacks.stream_data)
         s->callbacks.stream_data(s->session, s->id,
@@ -687,7 +708,7 @@ void stream_base_on_data(StreamHandler *handler, FlexBuffer *buf)
 static
 void stream_base_on_state_chagned(StreamHandler *handler, int state)
 {
-    ElaStream *s = (ElaStream *)handler;
+    IOEXStream *s = (IOEXStream *)handler;
 
     s->state = state;
 
@@ -695,28 +716,28 @@ void stream_base_on_state_chagned(StreamHandler *handler, int state)
         s->callbacks.state_changed(s->session, s->id, state, s->context);
 }
 
-int ela_session_add_stream(ElaSession *ws, ElaStreamType type,
+int IOEX_session_add_stream(IOEXSession *ws, IOEXStreamType type,
                            int options,
-                           ElaStreamCallbacks *callbacks, void *context)
+                           IOEXStreamCallbacks *callbacks, void *context)
 {
-    ElaStream *s;
+    IOEXStream *s;
     StreamHandler *prev;
     StreamHandler *handler;
     int rc;
 
     if (!ws) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
-    if (type == ElaStreamType_audio || type == ElaStreamType_video) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_IMPLEMENTED));
+    if (type == IOEXStreamType_audio || type == IOEXStreamType_video) {
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_IMPLEMENTED));
         return -1;
     }
 
     rc = ws->create_stream(ws, &s);
     if (rc != 0) {
-        ela_set_error(rc);
+        IOEX_set_error(rc);
         return -1;
     }
 
@@ -726,7 +747,7 @@ int ela_session_add_stream(ElaSession *ws, ElaStreamType type,
     if (s->id <= 0) {
         vlogE("Session: Too many streams!");
         deref(s);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY));
         return -1;
     }
 
@@ -737,15 +758,15 @@ int ela_session_add_stream(ElaSession *ws, ElaStreamType type,
         s->context = context;
     }
 
-    if (options & ELA_STREAM_COMPRESS)
+    if (options & IOEX_STREAM_COMPRESS)
         s->compress = 1;
-    if (options & ELA_STREAM_PLAIN)
+    if (options & IOEX_STREAM_PLAIN)
         s->unencrypt = 1;
-    if (options & ELA_STREAM_RELIABLE)
+    if (options & IOEX_STREAM_RELIABLE)
         s->reliable = 1;
-    if (options & ELA_STREAM_MULTIPLEXING)
+    if (options & IOEX_STREAM_MULTIPLEXING)
         s->multiplexing = 1;
-    if (options & ELA_STREAM_PORT_FORWARDING) {
+    if (options & IOEX_STREAM_PORT_FORWARDING) {
         s->multiplexing = 1;
         s->portforwarding = 1;
     }
@@ -767,7 +788,7 @@ int ela_session_add_stream(ElaSession *ws, ElaStreamType type,
         rc = multiplex_handler_create(s, &handler);
         if (rc < 0) {
             deref(s);
-            ela_set_error(rc);
+            IOEX_set_error(rc);
             return -1;
         }
 
@@ -780,7 +801,7 @@ int ela_session_add_stream(ElaSession *ws, ElaStreamType type,
         rc = reliable_handler_create(s, &handler);
         if (rc < 0) {
             deref(s);
-            ela_set_error(rc);
+            IOEX_set_error(rc);
             return -1;
         }
         handler_connect(prev, handler);
@@ -792,7 +813,7 @@ int ela_session_add_stream(ElaSession *ws, ElaStreamType type,
         rc = crypto_handler_create(s, &handler);
         if (rc < 0) {
             deref(s);
-            ela_set_error(rc);
+            IOEX_set_error(rc);
             return -1;
         }
         handler_connect(prev, handler);
@@ -806,7 +827,7 @@ int ela_session_add_stream(ElaSession *ws, ElaStreamType type,
     if (rc < 0) {
         deref(list_remove_entry(ws->streams, &s->le));
         deref(s);
-        ela_set_error(rc);
+        IOEX_set_error(rc);
         return -1;
     }
 
@@ -817,9 +838,9 @@ int ela_session_add_stream(ElaSession *ws, ElaStreamType type,
     return s->id;
 }
 
-static ElaStream *get_stream(ElaSession *ws, int stream)
+static IOEXStream *get_stream(IOEXSession *ws, int stream)
 {
-    ElaStream *s;
+    IOEXStream *s;
     ListIterator iterator;
     int rc;
 
@@ -845,18 +866,18 @@ rescan:
     return NULL;
 }
 
-int ela_session_remove_stream(ElaSession *ws, int stream)
+int IOEX_session_remove_stream(IOEXSession *ws, int stream)
 {
-    ElaStream *s;
+    IOEXStream *s;
 
     if (!ws || stream <= 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
@@ -871,40 +892,40 @@ int ela_session_remove_stream(ElaSession *ws, int stream)
     return 0;
 }
 
-ssize_t ela_stream_write(ElaSession *ws, int stream,
+ssize_t IOEX_stream_write(IOEXSession *ws, int stream,
                          const void *data, size_t len)
 {
-    ElaStream *s;
+    IOEXStream *s;
     FlexBuffer *buf;
     ssize_t sent;
 
-    if (!ws || stream <= 0 || !data || !len || len > ELA_MAX_USER_DATA_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (!ws || stream <= 0 || !data || !len || len > IOEX_MAX_USER_DATA_LEN) {
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
-    if (s->type == ElaStreamType_audio || s->type == ElaStreamType_video) {
+    if (s->type == IOEXStreamType_audio || s->type == IOEXStreamType_video) {
         deref(s);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_IMPLEMENTED));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_IMPLEMENTED));
         return -1;
     }
 
-    if (s->state != ElaStreamState_connected) {
+    if (s->state != IOEXStreamState_connected) {
         deref(s);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_WRONG_STATE));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE));
         return -1;
     }
 
     buf = flex_buffer_from(FLEX_PADDING_LEN, data, len);
     sent = s->pipeline.write(&s->pipeline, buf);
     if (sent < 0)
-        ela_set_error((int)sent);
+        IOEX_set_error((int)sent);
     else
         vlogD("Session: Stream %d sent %d bytes data.", s->id, (int)len);
 
@@ -912,18 +933,18 @@ ssize_t ela_stream_write(ElaSession *ws, int stream,
     return sent < 0 ? -1: sent;
 }
 
-int ela_stream_get_type(ElaSession *ws, int stream, ElaStreamType *type)
+int IOEX_stream_get_type(IOEXSession *ws, int stream, IOEXStreamType *type)
 {
-    ElaStream *s;
+    IOEXStream *s;
 
     if (!ws || stream <= 0 || !type) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
@@ -933,18 +954,18 @@ int ela_stream_get_type(ElaSession *ws, int stream, ElaStreamType *type)
     return 0;
 }
 
-int ela_stream_get_state(ElaSession *ws, int stream, ElaStreamState *state)
+int IOEX_stream_get_state(IOEXSession *ws, int stream, IOEXStreamState *state)
 {
-    ElaStream *s;
+    IOEXStream *s;
 
     if (!ws || stream <= 0 || !state) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
@@ -954,124 +975,124 @@ int ela_stream_get_state(ElaSession *ws, int stream, ElaStreamState *state)
     return 0;
 }
 
-int ela_stream_get_transport_info(ElaSession *ws, int stream, ElaTransportInfo *info)
+int IOEX_stream_get_transport_info(IOEXSession *ws, int stream, IOEXTransportInfo *info)
 {
     int rc;
-    ElaStream *s;
+    IOEXStream *s;
 
     if (!ws || stream <= 0 || !info) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
-    if (s->state != ElaStreamState_connected) {
+    if (s->state != IOEXStreamState_connected) {
         deref(s);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_WRONG_STATE));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE));
         return -1;
     }
 
     rc = s->get_info(s, info);
     if (rc < 0)
-        ela_set_error(rc);
+        IOEX_set_error(rc);
 
     deref(s);
     return rc < 0 ? -1 : 0;
 }
 
-int ela_stream_open_channel(ElaSession *ws, int stream, const char *cookie)
+int IOEX_stream_open_channel(IOEXSession *ws, int stream, const char *cookie)
 {
     int rc;
-    ElaStream *s;
+    IOEXStream *s;
 
     if (!ws || stream <= 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
-    if (s->state != ElaStreamState_connected) {
+    if (s->state != IOEXStreamState_connected) {
         deref(s);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_WRONG_STATE));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE));
         return -1;
     }
 
     if (!s->mux)
-        rc = ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        rc = IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     else
         rc = s->mux->channel.open(s->mux, ChannelType_User, cookie, 0);
 
     if (rc < 0)
-        ela_set_error(rc);
+        IOEX_set_error(rc);
 
     deref(s);
     return rc < 0 ? -1 : rc;
 }
 
-int ela_stream_close_channel(ElaSession *ws, int stream, int channel)
+int IOEX_stream_close_channel(IOEXSession *ws, int stream, int channel)
 {
     int rc;
-    ElaStream *s;
+    IOEXStream *s;
 
     if (!ws || stream <= 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
     if (!s->mux)
-        rc = ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        rc = IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     else
         rc = s->mux->channel.close(s->mux, channel);
 
     if (rc < 0)
-        ela_set_error(rc);
+        IOEX_set_error(rc);
 
     deref(s);
     return rc < 0 ? -1 : 0;
 }
 
-ssize_t ela_stream_write_channel(ElaSession *ws, int stream,
+ssize_t IOEX_stream_write_channel(IOEXSession *ws, int stream,
                                  int channel, const void *data, size_t len)
 {
     ssize_t written;
-    ElaStream *s;
+    IOEXStream *s;
 
     if (!ws || stream <= 0 || channel < 0 || !data || !len ||
-        len > ELA_MAX_USER_DATA_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        len > IOEX_MAX_USER_DATA_LEN) {
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
-    if (s->state != ElaStreamState_connected) {
+    if (s->state != IOEXStreamState_connected) {
         deref(s);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_WRONG_STATE));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE));
         return -1;
     }
 
     if (!s->mux)
-        written = (ssize_t)ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        written = (ssize_t)IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     else {
         FlexBuffer *buf = flex_buffer_from(FLEX_PADDING_LEN, data, len);
 
@@ -1079,69 +1100,69 @@ ssize_t ela_stream_write_channel(ElaSession *ws, int stream,
     }
 
     if (written < 0)
-        ela_set_error((int)written);
+        IOEX_set_error((int)written);
 
     deref(s);
     return written;
 }
 
-int ela_stream_pend_channel(ElaSession *ws, int stream, int channel)
+int IOEX_stream_pend_channel(IOEXSession *ws, int stream, int channel)
 {
     int rc;
-    ElaStream *s;
+    IOEXStream *s;
 
     if (!ws || stream <= 0 || channel <= 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
     if (!s->mux)
-        rc = ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        rc = IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     else
         rc = s->mux->channel.pend(s->mux, channel);
 
     if (rc < 0)
-        ela_set_error(rc);
+        IOEX_set_error(rc);
 
     deref(s);
     return rc < 0 ? -1 : 0;
 }
 
-int ela_stream_resume_channel(ElaSession *ws, int stream, int channel)
+int IOEX_stream_resume_channel(IOEXSession *ws, int stream, int channel)
 {
     int rc;
-    ElaStream *s;
+    IOEXStream *s;
 
     if (!ws || stream <= 0 || channel <= 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
     if (!s->mux)
-        rc = ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        rc = IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     else
         rc = s->mux->channel.resume(s->mux, channel);
 
     if (rc < 0)
-        ela_set_error(rc);
+        IOEX_set_error(rc);
 
     deref(s);
     return rc < 0 ? -1 : 0;
 }
 
-int ela_session_add_service(ElaSession *ws, const char *service,
+int IOEX_session_add_service(IOEXSession *ws, const char *service,
                             PortForwardingProtocol protocol,
                             const char *host, const char *port)
 {
@@ -1154,20 +1175,20 @@ int ela_session_add_service(ElaSession *ws, const char *service,
 
     if (!ws || !service || !*service || !host || !*host|| !port || !*port ||
         protocol != PortForwardingProtocol_TCP) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     if (!ws->portforwarding.services) {
         ws->portforwarding.services = services_create(8);
         if (!ws->portforwarding.services) {
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY));
             return -1;
         }
     }
 
     if (services_exist(ws->portforwarding.services, service)){
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_ALREADY_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_ALREADY_EXIST));
         return -1;
     }
 
@@ -1177,7 +1198,7 @@ int ela_session_add_service(ElaSession *ws, const char *service,
 
     svc = rc_zalloc(sizeof(Service) + service_len + host_len + port_len + 3, NULL);
     if (!svc) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY));
         return -1;
     }
 
@@ -1201,10 +1222,10 @@ int ela_session_add_service(ElaSession *ws, const char *service,
     return 0;
 }
 
-void ela_session_remove_service(ElaSession *ws, const char *service)
+void IOEX_session_remove_service(IOEXSession *ws, const char *service)
 {
     if (!ws || !service || !*service) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return;
     }
 
@@ -1212,28 +1233,28 @@ void ela_session_remove_service(ElaSession *ws, const char *service)
         services_remove(ws->portforwarding.services, service);
 }
 
-int ela_stream_open_port_forwarding(ElaSession *ws, int stream,
+int IOEX_stream_open_port_forwarding(IOEXSession *ws, int stream,
         const char *service, PortForwardingProtocol protocol,
         const char *host, const char *port)
 {
     int rc;
-    ElaStream *s;
+    IOEXStream *s;
 
     if (!ws || stream <= 0 || !service || !*service || !port || !*port ||
         protocol != PortForwardingProtocol_TCP) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
     if (protocol == PortForwardingProtocol_TCP && !s->reliable) {
         deref(s);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_WRONG_STATE));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE));
         return -1;
     }
 
@@ -1241,41 +1262,41 @@ int ela_stream_open_port_forwarding(ElaSession *ws, int stream,
         host = "127.0.0.1"; // Default bind to localhost only
 
     if (!s->mux)
-        rc = ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        rc = IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     else
         rc = s->mux->portforwarding.open(s->mux, service, protocol, host, port);
 
     if (rc < 0)
-        ela_set_error(rc);
+        IOEX_set_error(rc);
 
     deref(s);
     return rc < 0 ? -1 : rc;
 }
 
-int ela_stream_close_port_forwarding(ElaSession *ws, int stream,
+int IOEX_stream_close_port_forwarding(IOEXSession *ws, int stream,
                                     int portforwarding)
 {
     int rc;
-    ElaStream *s;
+    IOEXStream *s;
 
     if (!ws || stream <= 0 || portforwarding <= 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
         return -1;
     }
 
     s = get_stream(ws, stream);
     if (!s) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
         return -1;
     }
 
     if (!s->mux)
-        rc = ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        rc = IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     else
         rc = s->mux->portforwarding.close(s->mux, portforwarding);
 
     if (rc < 0)
-        ela_set_error(rc);
+        IOEX_set_error(rc);
 
     deref(s);
     return rc < 0 ? -1 : 0;

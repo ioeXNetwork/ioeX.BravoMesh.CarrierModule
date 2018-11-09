@@ -21,7 +21,7 @@ fi
 # argv3: BUILD
 # argv4: DIST_DIR
 packDevDist() {
-    FILES="include/ela_carrier.h include/ela_session.h"
+    FILES="include/IOEX_carrier.h include/IOEX_session.h"
 
     case $1 in
         "Linux" | "Raspbian")

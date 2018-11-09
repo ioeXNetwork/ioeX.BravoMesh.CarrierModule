@@ -19,6 +19,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+ 
 
 #include <stdlib.h>
 #include <assert.h>
@@ -29,8 +51,8 @@
 #include <sys/time.h>
 #include <pthread.h>
 
-#include "ela_carrier.h"
-#include "ela_session.h"
+#include "IOEX_carrier.h"
+#include "IOEX_session.h"
 #include "cond.h"
 #include "tests.h"
 #include "test_helper.h"
@@ -41,35 +63,35 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(IOEXCarrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
 static
-void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+void friend_added_cb(IOEXCarrier *w, const IOEXFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(IOEXCarrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(IOEXCarrier *w, const char *friendid,
+                                 IOEXConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
     wakeup(context);
-    wctxt->robot_online = (status == ElaConnectionStatus_Connected);
+    wctxt->robot_online = (status == IOEXConnectionStatus_Connected);
 
     test_log_debug("Robot connection status changed -> %s\n",
                     connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static IOEXCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -96,7 +118,7 @@ static struct CarrierContext carrier_context = {
     .extra = NULL
 };
 
-static void session_request_complete_callback(ElaSession *ws, int status,
+static void session_request_complete_callback(IOEXSession *ws, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = (SessionContext *)context;
@@ -109,7 +131,7 @@ static void session_request_complete_callback(ElaSession *ws, int status,
     if (status == 0) {
         int rc;
 
-        rc = ela_session_start(ws, sdp, len);
+        rc = IOEX_session_start(ws, sdp, len);
         CU_ASSERT_EQUAL(rc, 0);
     }
 
@@ -143,15 +165,15 @@ static StreamContextExtra stream_extra = {
     .return_val = -1,
 };
 
-static void stream_on_data(ElaSession *ws, int stream, const void *data,
+static void stream_on_data(IOEXSession *ws, int stream, const void *data,
                            size_t len, void *context)
 {
     test_log_debug("Stream [%d] received data [%.*s]\n", stream, (int)len,
                     (char*)data);
 }
 
-static void stream_state_changed(ElaSession *ws, int stream,
-                                 ElaStreamState state, void *context)
+static void stream_state_changed(IOEXSession *ws, int stream,
+                                 IOEXStreamState state, void *context)
 {
     StreamContext *sc = (StreamContext *)context;
 
@@ -164,7 +186,7 @@ static void stream_state_changed(ElaSession *ws, int stream,
     cond_signal(sc->cond);
 }
 
-static ElaStreamCallbacks stream_callbacks = {
+static IOEXStreamCallbacks stream_callbacks = {
     .stream_data = stream_on_data,
     .state_changed = stream_state_changed
 };
@@ -231,16 +253,16 @@ static void *bulk_write_routine(void *arg)
         size_t sent = 0;
 
         do {
-            rc = ela_stream_write(sctxt->session, stream_ctxt->stream_id,
+            rc = IOEX_stream_write(sctxt->session, stream_ctxt->stream_id,
                                   (const char*)(packet + sent),
                                   total - sent);
             if (rc < 0) { //TODO: consider condition rc == 0.
-                if (ela_get_error() == ELA_GENERAL_ERROR(ELAERR_BUSY)) {
+                if (IOEX_get_error() == IOEX_GENERAL_ERROR(IOEXERR_BUSY)) {
                     usleep(100);
                     continue;
                 }
                 else {
-                    test_log_error("Write data failed (0x%x)\n", ela_get_error());
+                    test_log_error("Write data failed (0x%x)\n", IOEX_get_error());
                     return NULL;
                 }
             }
@@ -305,7 +327,7 @@ static int do_bulk_write(TestContext *context)
 static inline
 void test_stream_write(int stream_options)
 {
-    test_stream_scheme(ElaStreamType_text, stream_options,
+    test_stream_scheme(IOEXStreamType_text, stream_options,
                        &test_context, do_bulk_write);
 
 }
@@ -317,20 +339,20 @@ static void test_stream_unreliable(void)
 
 static void test_stream_unreliable_plain(void)
 {
-    test_stream_write(ELA_STREAM_PLAIN);
+    test_stream_write(IOEX_STREAM_PLAIN);
 }
 
 static void test_stream_reliable(void)
 {
-    test_stream_write(ELA_STREAM_RELIABLE);
+    test_stream_write(IOEX_STREAM_RELIABLE);
 }
 
 static void test_stream_reliable_plain(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
+    stream_options |= IOEX_STREAM_PLAIN;
+    stream_options |= IOEX_STREAM_RELIABLE;
 
     test_stream_write(stream_options);
 }
@@ -339,7 +361,7 @@ static void test_stream_multiplexing(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
 
     test_stream_write(stream_options);
 }
@@ -348,8 +370,8 @@ static void test_stream_plain_multiplexing(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_PLAIN;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
 
     test_stream_write(stream_options);
 }
@@ -358,8 +380,8 @@ static void test_stream_reliable_multiplexing(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_RELIABLE;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
 
     test_stream_write(stream_options);
 }
@@ -368,9 +390,9 @@ static void test_stream_reliable_plain_multiplexing(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_PLAIN;
+    stream_options |= IOEX_STREAM_RELIABLE;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
 
     test_stream_write(stream_options);
 }
@@ -379,9 +401,9 @@ static void test_stream_reliable_portforwarding(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_PORT_FORWARDING;
+    stream_options |= IOEX_STREAM_RELIABLE;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_PORT_FORWARDING;
 
     test_stream_write(stream_options);
 }
@@ -390,10 +412,10 @@ static void test_stream_reliable_plain_portforwarding(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_PORT_FORWARDING;
+    stream_options |= IOEX_STREAM_PLAIN;
+    stream_options |= IOEX_STREAM_RELIABLE;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_PORT_FORWARDING;
 
     test_stream_write(stream_options);
 }

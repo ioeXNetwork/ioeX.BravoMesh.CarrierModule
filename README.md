@@ -1,8 +1,9 @@
-# Elastos Carrier Native SDK
+# IOEX BravoMesh Carrier Module SDK
 
 ## Summary
+IOEX leveraged Elastos functions to create its owned features and also business cases.
 
-Elastos Carrier is a decentralized peer to peer communication framework.
+IOEX BravoMesh Carrier is a decentralized peer to peer communication framework.
 
 ## Build from source
 
@@ -89,7 +90,7 @@ $ ./darwin_build.sh help
 Change to `$(SRC_ROOT)`/docker directory, and run:
 
 ```shell
-$ docker build -t elastos-dev .
+$ docker build -t IOEX-dev .
 ```
 
 #### 2. Start Docker image
@@ -97,7 +98,7 @@ $ docker build -t elastos-dev .
 Then you can start the Docker image:
 
 ```shell
-$ docker run -tiv $(SRC_ROOT):/home/elastos/Projects --tmpfs=/tmp elastos-dev /bin/bash
+$ docker run -tiv $(SRC_ROOT):/home/IOEX/Projects --tmpfs=/tmp IOEX-dev /bin/bash
 ```
 
 #### 3. Build in docker
@@ -111,7 +112,7 @@ $ ./linux_build.sh
 
 ### Android
 
-You need to get android NDK packages to build carrier NDKs for several targets, and of which will be built into Android Java carrier SDK. **The minimum Android NDK API level required by Elastos Carrier is 21**. 
+You need to get android NDK packages to build carrier NDKs for several targets, and of which will be built into Android Java carrier SDK.
 
 #### Build on Linux
 
@@ -214,11 +215,11 @@ $ ./linux_build.sh armv7l help
 ## Test
 
 After success finished build from the source code, change directory to `$(SRC_ROOT)/apps/shell`.
-This demo application is an interactive shell for Elastos Carrier. Run following command to start
+This demo application is an interactive shell for IOEX BravoMesh Carrier. Run following command to start
 the shell.
 
 ```shell
-$ ./elashell.sh
+$ ./IOEXshell.sh
 ```
 
 ## Build API documentation

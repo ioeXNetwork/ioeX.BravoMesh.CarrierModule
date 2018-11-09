@@ -1,4 +1,4 @@
-LIBNAME = libelasession
+LIBNAME = libIOEXsession
 
 PREFIX ?= /usr/local
 INCLUDE_PATH ?= include
@@ -11,7 +11,7 @@ INSTALL_LIBRARY_PATH = $(DESTDIR)$(PREFIX)/$(LIBRARY_PATH)
 INSTALL ?= cp -a
 
 CFLAGS := $(CFLAGS) -I. -I../common -I../carrier -I$(INSTALL_INCLUDE_PATH) -DCARRIER_BUILD -fPIC -Wall  -Wstrict-prototypes -Wwrite-strings
-LIBS   := -lelacommon -lelacarrier -lpjmedia -lpjnath -lpjlib-util -lpj -lm
+LIBS   := -lIOEXcommon -lIOEXcarrier -lpjmedia -lpjnath -lpjlib-util -lpj -lm
 
 ifeq ($(HOST), Android)
 	LIBS := $(LIBS) -llog
@@ -33,12 +33,8 @@ else
 	DYLIBNAME = $(LIBNAME).so
 endif
 
-ifeq ($(HOST), iOS)
-	LDFLAGS := $(LDFLAGS) -install_name @rpath/$(DYLIBNAME)
-endif
-
 PSEUDOTCP_SRCS = pseudotcp/pseudotcp.c pseudotcp/glist.c pseudotcp/gqueue.c
-SRCS = session.c crypto_handler.c reliable_handler.c multiplex_handler.c portforwarding.c fdset.c udp_eventfd.c  ice.c $(PSEUDOTCP_SRCS)
+SRCS = session.c crypto_handler.c reliable_handler.c multiplex_handler.c portforwarding.c fdset.c udp_eventfd.c ice.c $(PSEUDOTCP_SRCS)
 
 OBJS = $(SRCS:.c=.o)
 
@@ -47,7 +43,7 @@ LOBJS = $(SRCS:.c=.lo)
 .SUFFIXES:
 .SUFFIXES: .c .lo .o
 
-HEADERS = ela_session.h
+HEADERS = IOEX_session.h
 
 .PHONY: all clean install
 
@@ -78,7 +74,7 @@ install: all
 	$(INSTALL) $(STLIBNAME) $(INSTALL_LIBRARY_PATH)
 
 clean:
-	rm -rf $(DYLIBNAME) $(STLIBNAME)
+	rm -rf $(DYLIBNAME) $(STLIBNAME) 
 	rm -rf *.o *.lo
 	rm -rf pseudotcp/*.o pseudotcp/*.lo
 

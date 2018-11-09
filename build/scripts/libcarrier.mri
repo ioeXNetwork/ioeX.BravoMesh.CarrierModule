@@ -6,8 +6,8 @@ addlib libpj.a
 addlib libpjlib-util.a
 addlib libpjnath.a
 addlib libpjmedia.a
-addlib libelacommon.a
-addlib libelacarrier.a
-addlib libelasession.a
+addlib libIOEXcommon.a
+addlib libIOEXcarrier.a
+addlib libIOEXsession.a
 save
 end

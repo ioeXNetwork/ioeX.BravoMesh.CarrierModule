@@ -19,21 +19,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+ 
 
 #include <stdlib.h>
 #include <CUnit/Basic.h>
 
-#include "ela_carrier.h"
+#include "IOEX_carrier.h"
 #include "cond.h"
 #include "tests.h"
 #include "test_helper.h"
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(IOEXCarrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static ElaCallbacks callbacks = {
+static IOEXCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -68,11 +90,11 @@ static TestContext test_context = {
 
 static void test_get_self_info(void)
 {
-    ElaCarrier *w = test_context.carrier->carrier;
+    IOEXCarrier *w = test_context.carrier->carrier;
     int rc;
     char *p;
-    ElaUserInfo me;
-    ElaUserInfo info = {
+    IOEXUserInfo me;
+    IOEXUserInfo info = {
         .name   = {"zhangsan"},
         .description = { "We all want a code to live by." },
         .gender = { "male" },
@@ -84,13 +106,13 @@ static void test_get_self_info(void)
 
     memset(&me, 0, sizeof(me));
 
-    p = ela_get_userid(w, info.userid, sizeof(info.userid));
+    p = IOEX_get_userid(w, info.userid, sizeof(info.userid));
     CU_ASSERT_PTR_NOT_NULL_FATAL(p);
 
-    rc = ela_set_self_info(w, &info);
+    rc = IOEX_set_self_info(w, &info);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    rc = ela_get_self_info(w, &me);
+    rc = IOEX_get_self_info(w, &me);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     CU_ASSERT_STRING_EQUAL(me.userid, info.userid);

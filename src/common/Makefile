@@ -1,4 +1,4 @@
-LIBNAME = libelacommon
+LIBNAME = libIOEXcommon
 
 PREFIX ?= /usr/local
 INCLUDE_PATH ?= include
@@ -34,10 +34,6 @@ ifneq (, $(findstring $(HOST), Darwin iOS))
 	DYLIBNAME = $(LIBNAME).dylib
 else
 	DYLIBNAME = $(LIBNAME).so
-endif
-
-ifeq ($(HOST), iOS)
-	LDFLAGS := $(LDFLAGS) -install_name @rpath/$(DYLIBNAME)
 endif
 
 SRCS = vlog.c base58.c rc_mem.c linkedhashtable.c linkedlist.c crypto.c time_util.c bitset.c ids_heap.c timerheap.c socket.c

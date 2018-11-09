@@ -19,6 +19,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+ 
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,7 +64,7 @@
 #include "dht.h"
 #include "dht_callbacks.h"
 
-#include "ela_carrier.h"
+#include "IOEX_carrier.h"
 
 const char *data_filename = "dhtdata";
 
@@ -56,47 +78,47 @@ static inline int __dht_new_error(TOX_ERR_NEW code)
 
     switch (code) {
     case TOX_ERR_NEW_OK:
-        rc = ELASUCCESS;
+        rc = IOEXSUCCESS;
         break;
 
     case TOX_ERR_NEW_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
         break;
 
     case TOX_ERR_NEW_MALLOC:
-        rc = ELA_DHT_ERROR(ELAERR_OUT_OF_MEMORY);
+        rc = IOEX_DHT_ERROR(IOEXERR_OUT_OF_MEMORY);
         break;
 
     case TOX_ERR_NEW_PORT_ALLOC:
-        rc = ELA_DHT_ERROR(ELAERR_PORT_ALLOC);
+        rc = IOEX_DHT_ERROR(IOEXERR_PORT_ALLOC);
         break;
 
     case TOX_ERR_NEW_PROXY_BAD_TYPE:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_PROXY_TYPE);
+        rc = IOEX_DHT_ERROR(IOEXERR_BAD_PROXY_TYPE);
         break;
 
     case TOX_ERR_NEW_PROXY_BAD_HOST:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_PROXY_HOST);
+        rc = IOEX_DHT_ERROR(IOEXERR_BAD_PROXY_HOST);
         break;
 
     case TOX_ERR_NEW_PROXY_BAD_PORT:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_PROXY_PORT);
+        rc = IOEX_DHT_ERROR(IOEXERR_BAD_PROXY_PORT);
         break;
 
     case TOX_ERR_NEW_PROXY_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_PROXY_NOT_AVAILABLE);
+        rc = IOEX_DHT_ERROR(IOEXERR_PROXY_NOT_AVAILABLE);
         break;
 
     case TOX_ERR_NEW_LOAD_ENCRYPTED:
-        rc = ELA_DHT_ERROR(ELAERR_ENCRYPTED_PERSISTENT_DATA);
+        rc = IOEX_DHT_ERROR(IOEXERR_ENCRYPTED_PERSISTENT_DATA);
         break;
 
     case TOX_ERR_NEW_LOAD_BAD_FORMAT:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_PERSISTENT_DATA);
+        rc = IOEX_DHT_ERROR(IOEXERR_BAD_PERSISTENT_DATA);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
     }
 
     return rc;
@@ -108,23 +130,23 @@ static inline int __dht_bootstrap_error(TOX_ERR_BOOTSTRAP code)
 
     switch (code) {
     case TOX_ERR_BOOTSTRAP_OK:
-        rc = ELASUCCESS;
+        rc = IOEXSUCCESS;
         break;
 
     case TOX_ERR_BOOTSTRAP_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
         break;
 
     case TOX_ERR_BOOTSTRAP_BAD_HOST:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_BOOTSTRAP_HOST);
+        rc = IOEX_DHT_ERROR(IOEXERR_BAD_BOOTSTRAP_HOST);
         break;
 
     case TOX_ERR_BOOTSTRAP_BAD_PORT:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_BOOTSTRAP_PORT);
+        rc = IOEX_DHT_ERROR(IOEXERR_BAD_BOOTSTRAP_PORT);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
     }
 
     return rc;
@@ -136,19 +158,19 @@ static inline int __dht_friend_query_error(TOX_ERR_FRIEND_QUERY code)
 
     switch (code) {
     case TOX_ERR_FRIEND_QUERY_OK:
-        rc = ELASUCCESS;
+        rc = IOEXSUCCESS;
         break;
 
     case TOX_ERR_FRIEND_QUERY_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
         break;
 
     case TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
     }
 
     return rc;
@@ -160,15 +182,15 @@ static inline int __dht_friend_get_pk_error(TOX_ERR_FRIEND_GET_PUBLIC_KEY code)
 
     switch (code) {
     case TOX_ERR_FRIEND_GET_PUBLIC_KEY_OK:
-        rc = ELASUCCESS;
+        rc = IOEXSUCCESS;
         break;
 
     case TOX_ERR_FRIEND_GET_PUBLIC_KEY_FRIEND_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
     }
 
     return rc;
@@ -180,19 +202,19 @@ static inline int __dht_set_info_error(TOX_ERR_SET_INFO code)
 
     switch (code) {
     case TOX_ERR_SET_INFO_OK:
-        rc = ELASUCCESS;
+        rc = IOEXSUCCESS;
         break;
 
     case TOX_ERR_SET_INFO_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
         break;
 
     case TOX_ERR_SET_INFO_TOO_LONG:
-        rc = ELA_DHT_ERROR(ELAERR_TOO_LONG);
+        rc = IOEX_DHT_ERROR(IOEXERR_TOO_LONG);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
     }
 
     return rc;
@@ -204,19 +226,19 @@ static inline int __dht_friend_by_pk_error(TOX_ERR_FRIEND_BY_PUBLIC_KEY code)
 
     switch (code) {
     case TOX_ERR_FRIEND_BY_PUBLIC_KEY_OK:
-        rc = ELASUCCESS;
+        rc = IOEXSUCCESS;
         break;
 
     case TOX_ERR_FRIEND_BY_PUBLIC_KEY_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
         break;
 
     case TOX_ERR_FRIEND_BY_PUBLIC_KEY_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
     }
 
     return rc;
@@ -228,40 +250,40 @@ static inline int __dht_friend_add_error(TOX_ERR_FRIEND_ADD code)
 
     switch (code) {
     case TOX_ERR_FRIEND_ADD_OK:
-        rc = ELASUCCESS;
+        rc = IOEXSUCCESS;
         break;
 
     case TOX_ERR_FRIEND_ADD_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
         break;
 
     case TOX_ERR_FRIEND_ADD_TOO_LONG:
-        rc = ELA_DHT_ERROR(ELAERR_TOO_LONG);
+        rc = IOEX_DHT_ERROR(IOEXERR_TOO_LONG);
         break;
 
     case TOX_ERR_FRIEND_ADD_NO_MESSAGE:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
         break;
 
     case TOX_ERR_FRIEND_ADD_OWN_KEY:
-        rc = ELA_DHT_ERROR(ELAERR_ADD_SELF);
+        rc = IOEX_DHT_ERROR(IOEXERR_ADD_SELF);
         break;
 
     case TOX_ERR_FRIEND_ADD_ALREADY_SENT:
-        rc = ELA_DHT_ERROR(ELAERR_ALREADY_EXIST);
+        rc = IOEX_DHT_ERROR(IOEXERR_ALREADY_EXIST);
         break;
 
     case TOX_ERR_FRIEND_ADD_BAD_CHECKSUM:
     case TOX_ERR_FRIEND_ADD_SET_NEW_NOSPAM:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_ADDRESS);
+        rc = IOEX_DHT_ERROR(IOEXERR_BAD_ADDRESS);
         break;
 
     case TOX_ERR_FRIEND_ADD_MALLOC:
-        rc = ELA_DHT_ERROR(ELAERR_OUT_OF_MEMORY);
+        rc = IOEX_DHT_ERROR(IOEXERR_OUT_OF_MEMORY);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
     }
 
     return rc;
@@ -273,35 +295,35 @@ static inline int __dht_friend_send_msg_error(TOX_ERR_FRIEND_SEND_MESSAGE code)
 
     switch (code) {
     case TOX_ERR_FRIEND_SEND_MESSAGE_OK:
-        rc = ELASUCCESS;
+        rc = IOEXSUCCESS;
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_FRIEND_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_FRIEND_NOT_CONNECTED:
-        rc = ELA_DHT_ERROR(ELAERR_FRIEND_OFFLINE);
+        rc = IOEX_DHT_ERROR(IOEXERR_FRIEND_OFFLINE);
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_SENDQ:
-        rc = ELA_DHT_ERROR(ELAERR_OUT_OF_MEMORY);
+        rc = IOEX_DHT_ERROR(IOEXERR_OUT_OF_MEMORY);
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_TOO_LONG:
-        rc = ELA_DHT_ERROR(ELAERR_TOO_LONG);
+        rc = IOEX_DHT_ERROR(IOEXERR_TOO_LONG);
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_EMPTY:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
     }
 
     return rc;
@@ -313,15 +335,142 @@ static inline int __dht_friend_delete_error(TOX_ERR_FRIEND_DELETE code)
 
     switch (code) {
     case TOX_ERR_FRIEND_DELETE_OK:
-        rc = ELASUCCESS;
+        rc = IOEXSUCCESS;
         break;
 
     case TOX_ERR_FRIEND_DELETE_FRIEND_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
+static inline int __dht_file_send_error(TOX_ERR_FILE_SEND code)
+{
+    int rc;
+    switch (code) {
+    case TOX_ERR_FILE_SEND_OK:
+        rc = IOEXSUCCESS;
+        break;
+
+    case TOX_ERR_FILE_SEND_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+
+    case TOX_ERR_FILE_SEND_FRIEND_NOT_CONNECTED:
+        rc = IOEX_DHT_ERROR(IOEXERR_FRIEND_OFFLINE);
+        break;
+
+    case TOX_ERR_FILE_SEND_NULL:
+    case TOX_ERR_FILE_SEND_NAME_TOO_LONG:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_INVALID);
+        break;
+
+    case TOX_ERR_FILE_SEND_TOO_MANY:
+        rc = IOEX_DHT_ERROR(IOEXERR_LIMIT_EXCEEDED);
+        break;
+
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
+static inline int __dht_file_seek_error(TOX_ERR_FILE_SEEK code)
+{
+    int rc;
+    switch (code) {
+    case TOX_ERR_FILE_SEEK_OK:
+        rc = IOEXSUCCESS;
+        break;
+    case TOX_ERR_FILE_SEEK_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+    case TOX_ERR_FILE_SEEK_FRIEND_NOT_CONNECTED:
+        rc = IOEX_DHT_ERROR(IOEXERR_FRIEND_OFFLINE);
+        break;
+    case TOX_ERR_FILE_SEEK_NOT_FOUND:
+    case TOX_ERR_FILE_SEEK_INVALID_POSITION:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_INVALID);
+        break;
+    case TOX_ERR_FILE_SEEK_DENIED:
+        rc = IOEX_DHT_ERROR(IOEXERR_WRONG_STATE);
+        break;
+    case TOX_ERR_FILE_SEEK_SENDQ:
+        rc = IOEX_DHT_ERROR(IOEXERR_LIMIT_EXCEEDED);
+        break;
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
+static inline int __dht_file_control_error(TOX_ERR_FILE_CONTROL code)
+{
+    int rc;
+    switch(code) {
+    case TOX_ERR_FILE_CONTROL_OK:
+        rc = IOEXSUCCESS;
+        break;
+    case TOX_ERR_FILE_CONTROL_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+    case TOX_ERR_FILE_CONTROL_FRIEND_NOT_CONNECTED:
+        rc = IOEX_DHT_ERROR(IOEXERR_FRIEND_OFFLINE);
+        break;
+    case TOX_ERR_FILE_CONTROL_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_INVALID);
+        break;
+    case TOX_ERR_FILE_CONTROL_NOT_PAUSED:
+    case TOX_ERR_FILE_CONTROL_DENIED:
+    case TOX_ERR_FILE_CONTROL_ALREADY_PAUSED:
+        rc = IOEX_DHT_ERROR(IOEXERR_WRONG_STATE);
+        break;
+    case TOX_ERR_FILE_CONTROL_SENDQ:
+        rc = IOEX_DHT_ERROR(IOEXERR_LIMIT_EXCEEDED);
+        break;
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
+static inline int __dht_file_send_chunk_error(TOX_ERR_FILE_SEND_CHUNK code)
+{
+    int rc;
+    switch(code) {
+    case TOX_ERR_FILE_SEND_CHUNK_OK:
+        rc = IOEXSUCCESS;
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_NULL:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_INVALID);
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_FRIEND_NOT_CONNECTED:
+        rc = IOEX_DHT_ERROR(IOEXERR_FRIEND_OFFLINE);
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_NOT_FOUND:
+    case TOX_ERR_FILE_SEND_CHUNK_INVALID_LENGTH:
+    case TOX_ERR_FILE_SEND_CHUNK_WRONG_POSITION:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_INVALID);
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_NOT_TRANSFERRING:
+        rc = IOEX_DHT_ERROR(IOEXERR_WRONG_STATE);
+        break;
+    case TOX_ERR_FILE_SEND_CHUNK_SENDQ:
+        rc = IOEX_DHT_ERROR(IOEXERR_LIMIT_EXCEEDED);
+        break;
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
     }
 
     return rc;
@@ -401,6 +550,54 @@ void notify_friend_message_cb(Tox *tox, uint32_t friend_number,
     cbs->notify_friend_message(friend_number, message, length, cbs->context);
 }
 
+static 
+void notify_file_request_cb(Tox *tox, uint32_t friend_number, uint32_t real_filenumber, uint32_t kind, uint64_t file_size,
+                            const uint8_t *filename, size_t filename_length, void *context)
+{
+    DHTCallbacks *cbs = (DHTCallbacks *)context;
+    cbs->notify_file_request(friend_number, real_filenumber, filename, file_size, cbs->context);
+}
+
+static 
+void notify_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+                            void *context)
+{
+    DHTCallbacks *cbs = (DHTCallbacks *)context;
+    // TODO: add other control callbacks. Also have a better way to determine it is start or resume
+
+    switch(control){
+        case TOX_FILE_CONTROL_PAUSE:
+            cbs->notify_file_paused(friend_number, file_number, cbs->context);
+            break;
+        case TOX_FILE_CONTROL_RESUME:
+            cbs->notify_file_resumed(friend_number, file_number, cbs->context);
+            cbs->notify_file_accepted(friend_number, file_number, cbs->context);
+            break;
+        case TOX_FILE_CONTROL_CANCEL:
+            cbs->notify_file_canceled(friend_number, file_number, cbs->context);
+            cbs->notify_file_rejected(friend_number, file_number, cbs->context);
+            break;
+        default:
+            vlogE("Received unknown file control:%d from friend[%u] for file[%u]", control, friend_number, file_number);
+    }
+}
+
+static 
+void notify_file_chunk_request_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
+                                  size_t length, void *context)
+{
+    DHTCallbacks *cbs = (DHTCallbacks *)context;
+    cbs->notify_file_chunk_request(friend_number, file_number, position, length, cbs->context);
+}
+
+static
+void notify_file_chunk_receive_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data,
+                                  size_t length, void *context)
+{
+    DHTCallbacks *cbs = (DHTCallbacks *)context;
+    cbs->notify_file_chunk_receive(friend_number, file_number, position, data, length, cbs->context);
+}
+
 static
 void log_cb(Tox *tox, TOX_LOG_LEVEL level, const char *file, uint32_t line,
             const char *func, const char *message, void *user_data)
@@ -471,6 +668,11 @@ int dht_new(const uint8_t *savedata, size_t datalen, bool udp_enabled, DHT *dht)
     tox_callback_friend_status(tox, notify_friend_status_cb);
     tox_callback_friend_request(tox, notify_friend_request_cb);
     tox_callback_friend_message(tox, notify_friend_message_cb);
+
+    tox_callback_file_recv(tox, notify_file_request_cb);
+    tox_callback_file_recv_control(tox, notify_file_control_cb);
+    tox_callback_file_chunk_request(tox, notify_file_chunk_request_cb);
+    tox_callback_file_recv_chunk(tox, notify_file_chunk_receive_cb);
 
     dht->tox = tox;
 
@@ -867,3 +1069,155 @@ int dht_get_random_tcp_relay(DHT *dht, char *tcp_relay, size_t buflen,
     return 0;
 }
 
+int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath, uint32_t *filenum)
+{
+    Tox *tox = dht->tox;
+    char filename[IOEX_MAX_FILE_NAME_LEN + 1];
+    TOX_ERR_FILE_SEND error;
+
+    // Get file size
+    FILE *tempfile = fopen(fullpath, "rb");
+    if(tempfile == NULL){
+        return IOEX_GENERAL_ERROR(IOEXERR_FILE_INVALID);
+    }
+    fseek(tempfile, 0, SEEK_END);
+    uint64_t filesize = ftell(tempfile);
+    fclose(tempfile);
+
+    // Parse file name from fullpath
+    char *pch = strrchr(fullpath, '/');
+    if(pch == NULL){
+        strncpy(filename, fullpath, sizeof(filename));
+    }
+    else{
+        strncpy(filename, pch+1, sizeof(filename));
+    }
+
+    *filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename, 
+                             strlen(filename), &error);
+    if(*filenum != UINT32_MAX) {
+        vlogI("Sent file send request.");
+    }
+    else {
+        vlogE("Sent file send request error: %i", error);
+    }
+
+    return __dht_file_send_error(error);
+}
+
+int dht_file_send_accept(DHT *dht, uint32_t friend_number, const uint32_t file_number)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_CONTROL error;
+
+    rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error);
+    if(rc) {
+        vlogI("Accepted file.");
+    }
+    else {
+        vlogE("Send file control error: %i", error);
+    }
+
+    return __dht_file_control_error(error);
+}
+
+int dht_file_send_seek(DHT *dht, uint32_t friend_number, const uint32_t file_number, uint64_t position)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_SEEK error;
+
+    rc = tox_file_seek(tox, friend_number, file_number, position, &error);
+    if(rc) {
+        vlogI("Sent seek request.");
+    }
+    else { 
+        vlogE("Send file seek error: %i", error);
+    }
+
+    return __dht_file_seek_error(error);
+}
+
+int dht_file_send_reject(DHT *dht, uint32_t friend_number, const uint32_t file_number)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_CONTROL error;
+
+    rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, &error);
+    if(rc){
+        vlogI("Rejected file.");
+    }
+    else{
+        vlogE("Send file reject error: %i", error);
+    }
+
+    return __dht_file_control_error(error);
+}
+
+int dht_file_send_pause(DHT *dht, uint32_t friend_number, const uint32_t file_number)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_CONTROL error;
+
+    rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_PAUSE, &error);
+    if(rc){
+        vlogI("Paused file.");
+    }
+    else{
+        vlogE("Send file pause error: %i", error);
+    }
+
+    return __dht_file_control_error(error);
+}
+
+int dht_file_send_resume(DHT *dht, uint32_t friend_number, const uint32_t file_number)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_CONTROL error;
+
+    rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error);
+    if(rc){
+        vlogI("Resumed file.");
+    }
+    else {
+        vlogE("Send file resume error: %i", error);
+    }
+
+    return __dht_file_control_error(error);
+}
+
+int dht_file_send_cancel(DHT *dht, uint32_t friend_number, const uint32_t file_number)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_CONTROL error;
+
+    rc = tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, &error);
+    if(rc){
+        vlogI("Canceled file.");
+    }
+    else {
+        vlogE("Send file cancel error: %i", error);
+    }
+    return __dht_file_control_error(error);
+}
+
+int dht_file_send_chunk(DHT *dht, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data, int len)
+{
+    int rc;
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_SEND_CHUNK error;
+
+    rc = tox_file_send_chunk(tox, friend_number, file_number, position, data, len, &error);
+    if(rc){
+        vlogD("Send file chunk from position %lu with length %d to friend %u", position, len, friend_number);
+    }
+    else{
+        vlogE("Send file chunk error: %i", error);
+    }
+    return __dht_file_send_chunk_error(error);
+}

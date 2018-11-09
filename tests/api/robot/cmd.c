@@ -19,6 +19,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+ 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,8 +48,8 @@
 #include <ctype.h>
 #include <assert.h>
 
-#include "ela_carrier.h"
-#include "ela_session.h"
+#include "IOEX_carrier.h"
+#include "IOEX_session.h"
 
 #include "cmd.h"
 #include "tests.h"
@@ -43,7 +65,7 @@ struct SessionContextExtra {
 
     char remote_sdp[2048];
     size_t sdp_len;
-    char test_peer_id[(ELA_MAX_ID_LEN + 1) * 2];
+    char test_peer_id[(IOEX_MAX_ID_LEN + 1) * 2];
 };
 
 static SessionContextExtra session_extra = {
@@ -54,7 +76,7 @@ static SessionContextExtra session_extra = {
     .test_peer_id = {0}
 };
 
-static void session_request_callback(ElaCarrier *w, const char *from,
+static void session_request_callback(IOEXCarrier *w, const char *from,
                                      const char *sdp, size_t len, void *context)
 {
     SessionContextExtra *extra = ((SessionContext *)context)->extra;
@@ -68,7 +90,7 @@ static void session_request_callback(ElaCarrier *w, const char *from,
     robot_ack("srequest received\n");
 }
 
-static void session_request_complete_callback(ElaSession *ws, int status,
+static void session_request_complete_callback(IOEXSession *ws, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = ((TestContext *)context)->session;
@@ -84,27 +106,27 @@ static void session_request_complete_callback(ElaSession *ws, int status,
     }
 
     cond_wait(stream_ctxt->cond);
-    if (!(stream_ctxt->state_bits & (1 << ElaStreamState_transport_ready))) {
+    if (!(stream_ctxt->state_bits & (1 << IOEXStreamState_transport_ready))) {
         robot_log_error("Stream state not 'transport ready' state\n");
         goto cleanup;
     }
 
-    rc = ela_session_start(ws, sdp, len);
+    rc = IOEX_session_start(ws, sdp, len);
     if (rc < 0) {
         robot_log_error("Start session for robot failed (0x%x)\n",
-                        ela_get_error());
+                        IOEX_get_error());
         goto cleanup;
     } else
         robot_log_debug("Start session for robot success");
 
     cond_wait(stream_ctxt->cond);
-    if (!(stream_ctxt->state_bits & (1 << ElaStreamState_connecting))) {
+    if (!(stream_ctxt->state_bits & (1 << IOEXStreamState_connecting))) {
         robot_log_error("Stream state not 'connnecting' state\n");
         goto cleanup;
     }
 
     cond_wait(stream_ctxt->cond);
-    if (!(stream_ctxt->state_bits & (1 << ElaStreamState_connected))) {
+    if (!(stream_ctxt->state_bits & (1 << IOEXStreamState_connected))) {
         robot_log_error("Stream state not 'connected' state\n");
         goto cleanup;
     }
@@ -114,11 +136,11 @@ static void session_request_complete_callback(ElaSession *ws, int status,
 
 cleanup:
     if (stream_ctxt->stream_id > 0) {
-        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+        IOEX_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
         stream_ctxt->stream_id = -1;
     }
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        IOEX_session_close(sctxt->session);
         sctxt->session = NULL;
     }
     robot_ack("sconnect failed\n");
@@ -137,15 +159,15 @@ static SessionContext session_context = {
     .extra = &session_extra
 };
 
-static void stream_on_data(ElaSession *ws, int stream, const void *data,
+static void stream_on_data(IOEXSession *ws, int stream, const void *data,
                            size_t len, void *context)
 {
     robot_log_debug("Stream [%d] received data [%.*s]\n", stream, (int)len,
                     (char*)data);
 }
 
-static void stream_state_changed(ElaSession *ws, int stream,
-                                 ElaStreamState state, void *context)
+static void stream_state_changed(IOEXSession *ws, int stream,
+                                 IOEXStreamState state, void *context)
 {
     StreamContext *stream_ctxt = (StreamContext *)context;
 
@@ -173,7 +195,7 @@ static StreamContextExtra stream_extra = {
     .portforwarding_id = -1
 };
 
-static bool channel_open(ElaSession *ws, int stream, int channel,
+static bool channel_open(IOEXSession *ws, int stream, int channel,
                          const char *cookie, void *context)
 {
     StreamContextExtra *extra = ((StreamContext *)context)->extra;
@@ -185,7 +207,7 @@ static bool channel_open(ElaSession *ws, int stream, int channel,
 }
 
 static
-void channel_opened(ElaSession *ws, int stream, int channel, void *context)
+void channel_opened(IOEXSession *ws, int stream, int channel, void *context)
 {
     StreamContextExtra *extra = ((StreamContext *)context)->extra;
 
@@ -194,7 +216,7 @@ void channel_opened(ElaSession *ws, int stream, int channel, void *context)
     extra->channels[channel-1].channel_id = channel;
 }
 
-static void channel_close(ElaSession *ws, int stream, int channel,
+static void channel_close(IOEXSession *ws, int stream, int channel,
                           CloseReason reason, void *context)
 {
     StreamContextExtra *extra = ((StreamContext *)context)->extra;
@@ -211,7 +233,7 @@ static void channel_close(ElaSession *ws, int stream, int channel,
         extra->channels[channel-1].channel_error_state = 1;
 }
 
-static  bool channel_data(ElaSession *ws, int stream, int channel,
+static  bool channel_data(IOEXSession *ws, int stream, int channel,
                           const void *data, size_t len, void *context)
 {
     robot_log_debug("stream [%d] channel [%d] received data [%.*s]\n",
@@ -220,18 +242,18 @@ static  bool channel_data(ElaSession *ws, int stream, int channel,
 }
 
 static
-void channel_pending(ElaSession *ws, int stream, int channel, void *context)
+void channel_pending(IOEXSession *ws, int stream, int channel, void *context)
 {
     robot_log_debug("stream [%d] channel [%d] pend data.\n", stream, channel);
 }
 
 static
-void channel_resume(ElaSession *ws, int stream, int channel, void *context)
+void channel_resume(IOEXSession *ws, int stream, int channel, void *context)
 {
     robot_log_debug("stream [%d] channel [%d] resume data.\n", stream, channel);
 }
 
-static ElaStreamCallbacks stream_callbacks = {
+static IOEXStreamCallbacks stream_callbacks = {
     .stream_data = stream_on_data,
     .state_changed = stream_state_changed,
     .channel_open = channel_open,
@@ -274,18 +296,18 @@ static void wmready(TestContext *context, int argc, char *argv[])
  */
 static void fadd(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    IOEXCarrier *w = context->carrier->carrier;
     int rc;
 
     CHK_ARGS(argc == 4);
 
-    if (ela_is_friend(w, argv[1]))
-        ela_remove_friend(w, argv[1]);
+    if (IOEX_is_friend(w, argv[1]))
+        IOEX_remove_friend(w, argv[1]);
 
-    rc = ela_add_friend(w, argv[2], argv[3]);
+    rc = IOEX_add_friend(w, argv[2], argv[3]);
     if (rc < 0) {
         robot_log_error("Add user %s to be friend error (0x%x)\n",
-                         argv[2], ela_get_error());
+                         argv[2], IOEX_get_error());
     } else
         robot_log_debug("Add user %s to be friend success\n", argv[2]);
 }
@@ -295,17 +317,17 @@ static void fadd(TestContext *context, int argc, char *argv[])
  */
 static void faccept(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    IOEXCarrier *w = context->carrier->carrier;
     int rc;
 
     CHK_ARGS(argc == 2);
-    rc = ela_accept_friend(w, argv[1]);
+    rc = IOEX_accept_friend(w, argv[1]);
     if (rc < 0) {
-        if (ela_get_error() == ELA_GENERAL_ERROR(ELAERR_ALREADY_EXIST))
+        if (IOEX_get_error() == IOEX_GENERAL_ERROR(IOEXERR_ALREADY_EXIST))
             robot_log_debug("User %s already is friend.\n", argv[1]);
         else
             robot_log_error("Accept friend request from user %s error (0x%x)\n",
-                            argv[1], ela_get_error());
+                            argv[1], IOEX_get_error());
     } else
         robot_log_debug("Accept friend request from user %s success\n", argv[1]);
 }
@@ -315,15 +337,15 @@ static void faccept(TestContext *context, int argc, char *argv[])
  */
 static void fmsg(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    IOEXCarrier *w = context->carrier->carrier;
     int rc;
 
     CHK_ARGS(argc == 3);
 
-    rc = ela_send_friend_message(w, argv[1], argv[2], strlen(argv[2]) + 1);
+    rc = IOEX_send_friend_message(w, argv[1], argv[2], strlen(argv[2]) + 1);
     if (rc < 0)
         robot_log_error("Send message to friend %s error (0x%x)\n",
-                        argv[1], ela_get_error());
+                        argv[1], IOEX_get_error());
     else
         robot_log_debug("Send message to friend %s success\n", argv[1]);
 }
@@ -333,20 +355,20 @@ static void fmsg(TestContext *context, int argc, char *argv[])
  */
 static void fremove(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    IOEXCarrier *w = context->carrier->carrier;
     int rc;
 
     CHK_ARGS(argc == 2);
 
-    rc = ela_remove_friend(w, argv[1]);
+    rc = IOEX_remove_friend(w, argv[1]);
     if (rc < 0)
         robot_log_error("Remove friend %s error (0x%x)\n", argv[1],
-                        ela_get_error());
+                        IOEX_get_error());
     else
         robot_log_debug("Remove friend %s success\n", argv[1]);
 }
 
-static void invite_response_callback(ElaCarrier *w, const char *friendid,
+static void invite_response_callback(IOEXCarrier *w, const char *friendid,
                                      int status, const char *reason,
                                      const void *data, size_t len, void *context)
 {
@@ -365,16 +387,16 @@ static void invite_response_callback(ElaCarrier *w, const char *friendid,
  */
 static void finvite(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    IOEXCarrier *w = context->carrier->carrier;
     int rc;
 
     CHK_ARGS(argc == 3);
 
-    rc = ela_invite_friend(w, argv[1], argv[2], strlen(argv[2] + 1),
+    rc = IOEX_invite_friend(w, argv[1], argv[2], strlen(argv[2] + 1),
                                invite_response_callback, NULL);
     if (rc < 0)
         robot_log_error("Send invite request to friend %s error (0x%x)\n",
-                        argv[1], ela_get_error());
+                        argv[1], IOEX_get_error());
     else
         robot_log_debug("Send invite request to friend %s success\n", argv[1]);
 }
@@ -384,7 +406,7 @@ static void finvite(TestContext *context, int argc, char *argv[])
  */
 static void freplyinvite(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    IOEXCarrier *w = context->carrier->carrier;
     int rc;
     int status = 0;
     const char *reason = NULL;
@@ -404,10 +426,10 @@ static void freplyinvite(TestContext *context, int argc, char *argv[])
         return;
     }
 
-    rc = ela_reply_friend_invite(w, argv[1], status, reason, msg, msg_len);
+    rc = IOEX_reply_friend_invite(w, argv[1], status, reason, msg, msg_len);
     if (rc < 0)
         robot_log_error("Reply invite request from friend %s error (0x%x)\n",
-                        argv[1], ela_get_error());
+                        argv[1], IOEX_get_error());
     else
         robot_log_debug("Reply invite request from friend %s success\n", argv[1]);
 }
@@ -417,10 +439,10 @@ static void freplyinvite(TestContext *context, int argc, char *argv[])
  */
 static void wmkill(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    IOEXCarrier *w = context->carrier->carrier;
 
     robot_log_info("wmkill: kill\n");
-    ela_kill(w);
+    IOEX_kill(w);
 }
 
 static void robot_context_reset(TestContext *context)
@@ -449,7 +471,7 @@ static void robot_context_reset(TestContext *context)
  */
 static void sinit(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    IOEXCarrier *w = context->carrier->carrier;
     SessionContext *sctxt = context->session;
     int rc;
 
@@ -457,9 +479,9 @@ static void sinit(TestContext *context, int argc, char *argv[])
 
     robot_context_reset(context);
 
-    rc = ela_session_init(w, sctxt->request_cb, sctxt);
+    rc = IOEX_session_init(w, sctxt->request_cb, sctxt);
     if (rc < 0) {
-        robot_log_error("session init failed: 0x%x\n", ela_get_error());
+        robot_log_error("session init failed: 0x%x\n", IOEX_get_error());
         robot_ack("sinit failed\n");
         return;
     } else {
@@ -480,30 +502,30 @@ static void srequest(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 3);
 
-    sctxt->session = ela_session_new(context->carrier->carrier, argv[1]);
+    sctxt->session = IOEX_session_new(context->carrier->carrier, argv[1]);
     if (!sctxt->session) {
         robot_log_error("New session to %s failed: 0x%x\n", argv[1],
-                        ela_get_error());
+                        IOEX_get_error());
         goto cleanup;
     }
 
-    stream_ctxt->stream_id = ela_session_add_stream(sctxt->session,
-                                        ElaStreamType_text, atoi(argv[2]),
+    stream_ctxt->stream_id = IOEX_session_add_stream(sctxt->session,
+                                        IOEXStreamType_text, atoi(argv[2]),
                                         stream_ctxt->cbs, stream_ctxt);
     if (stream_ctxt->stream_id < 0) {
-        robot_log_error("Add text stream failed: 0x%x\n", ela_get_error());
+        robot_log_error("Add text stream failed: 0x%x\n", IOEX_get_error());
         goto cleanup;
     }
 
     cond_wait(stream_ctxt->cond);
-    if (!(stream_ctxt->state_bits & (1 << ElaStreamState_initialized))) {
+    if (!(stream_ctxt->state_bits & (1 << IOEXStreamState_initialized))) {
         robot_log_error("Stream state not 'initialized' state\n");
         goto cleanup;
     }
 
-    rc = ela_session_request(sctxt->session, sctxt->request_complete_cb, context);
+    rc = IOEX_session_request(sctxt->session, sctxt->request_complete_cb, context);
     if (rc < 0) {
-        robot_log_error("Session request failed: 0x%x\n", ela_get_error());
+        robot_log_error("Session request failed: 0x%x\n", IOEX_get_error());
         goto cleanup;
     }
 
@@ -516,12 +538,12 @@ static void srequest(TestContext *context, int argc, char *argv[])
 
 cleanup:
     if (stream_ctxt->stream_id > 0) {
-        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+        IOEX_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
         stream_ctxt->stream_id = -1;
     }
 
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        IOEX_session_close(sctxt->session);
         sctxt->session = NULL;
     }
 
@@ -541,10 +563,10 @@ static void sreply(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 4 || argc == 2);
 
-    sctxt->session = ela_session_new(context->carrier->carrier, sctxt->extra->test_peer_id);
+    sctxt->session = IOEX_session_new(context->carrier->carrier, sctxt->extra->test_peer_id);
     if (!sctxt->session) {
         robot_log_error("New session to %s failed: 0x%x\n",
-                        sctxt->extra->test_peer_id, ela_get_error());
+                        sctxt->extra->test_peer_id, IOEX_get_error());
         robot_ack("sreply failed\n");
         return;
     }
@@ -553,29 +575,29 @@ static void sreply(TestContext *context, int argc, char *argv[])
         int stream_type    = atoi(argv[2]);
         int stream_options = atoi(argv[3]);
 
-        stream_ctxt->stream_id = ela_session_add_stream(sctxt->session,
+        stream_ctxt->stream_id = IOEX_session_add_stream(sctxt->session,
                     stream_type, stream_options, stream_ctxt->cbs, stream_ctxt);
         if (stream_ctxt->stream_id < 0) {
-            robot_log_error("Add stream failed: 0x%x\n", ela_get_error());
+            robot_log_error("Add stream failed: 0x%x\n", IOEX_get_error());
             goto cleanup;
         }
 
         cond_wait(stream_ctxt->cond);
-        if (!(stream_ctxt->state_bits & (1 << ElaStreamState_initialized))) {
+        if (!(stream_ctxt->state_bits & (1 << IOEXStreamState_initialized))) {
             robot_log_error("Stream is in %d state, not 'initialized'\n",
                             stream_ctxt->state);
             goto cleanup;
         }
 
-        rc = ela_session_reply_request(sctxt->session, 0, NULL);
+        rc = IOEX_session_reply_request(sctxt->session, 0, NULL);
         if (rc < 0) {
             robot_log_error("Confirm session reqeust failed: 0x%x\n",
-                            ela_get_error());
+                            IOEX_get_error());
             goto cleanup;
         }
 
         cond_wait(stream_ctxt->cond);
-        if (!(stream_ctxt->state_bits & (1 << ElaStreamState_transport_ready))) {
+        if (!(stream_ctxt->state_bits & (1 << IOEXStreamState_transport_ready))) {
             robot_log_error("Stream is in %d state, not 'transport ready'\n",
                             stream_ctxt->state);
             goto cleanup;
@@ -586,22 +608,22 @@ static void sreply(TestContext *context, int argc, char *argv[])
 
         need_sreply_ack = 0;
 
-        rc = ela_session_start(sctxt->session, sctxt->extra->remote_sdp,
+        rc = IOEX_session_start(sctxt->session, sctxt->extra->remote_sdp,
                                    sctxt->extra->sdp_len);
         if (rc < 0) {
-            robot_log_error("Start session failed: 0x%x\n", ela_get_error());
+            robot_log_error("Start session failed: 0x%x\n", IOEX_get_error());
             goto cleanup;
         }
 
         cond_wait(stream_ctxt->cond);
-        if (!(stream_ctxt->state_bits & (1 << ElaStreamState_connecting))) {
+        if (!(stream_ctxt->state_bits & (1 << IOEXStreamState_connecting))) {
             robot_log_error("Stream is in %d state, not 'connecting'\n",
                             stream_ctxt->state);
             goto cleanup;
         }
 
         cond_wait(stream_ctxt->cond);
-        if (!(stream_ctxt->state_bits & (1 << ElaStreamState_connected))) {
+        if (!(stream_ctxt->state_bits & (1 << IOEXStreamState_connected))) {
             robot_log_error("Stream is in %d state, not 'connected'\n",
                             stream_ctxt->state);
             goto cleanup;
@@ -611,10 +633,10 @@ static void sreply(TestContext *context, int argc, char *argv[])
         return;
     }
     else if (strcmp(argv[1], "refuse") == 0) {
-        rc = ela_session_reply_request(sctxt->session, 1, "testing");
+        rc = IOEX_session_reply_request(sctxt->session, 1, "testing");
         if (rc < 0) {
             robot_log_error("Refuse session request failed: 0x%x\n",
-                            ela_get_error());
+                            IOEX_get_error());
             goto cleanup;
         }
 
@@ -631,15 +653,15 @@ static void sreply(TestContext *context, int argc, char *argv[])
 
 cleanup:
     if (stream_ctxt->stream_id > 0) {
-        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+        IOEX_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
         stream_ctxt->stream_id = -1;
     }
 
     if (need_sreply_ack && sctxt->session)
-        ela_session_reply_request(sctxt->session, 2, "Error");
+        IOEX_session_reply_request(sctxt->session, 2, "Error");
 
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        IOEX_session_close(sctxt->session);
         sctxt->session = NULL;
     }
 
@@ -651,29 +673,29 @@ cleanup:
 
 static void sfree(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    IOEXCarrier *w = context->carrier->carrier;
     SessionContext *sctxt = context->session;
     StreamContext *stream_ctxt = context->stream;
 
     CHK_ARGS(argc == 1);
 
     if (stream_ctxt->stream_id > 0) {
-        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+        IOEX_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
 
         cond_wait(stream_ctxt->cond);
-        if (stream_ctxt->state != ElaStreamState_closed)
+        if (stream_ctxt->state != IOEXStreamState_closed)
             robot_log_error("Stream should be closed, but (%d)\n",
                             stream_ctxt->state);
         stream_ctxt->stream_id = -1;
     }
 
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        IOEX_session_close(sctxt->session);
         sctxt->session = NULL;
     }
 
     if (sctxt->extra->init_flag) {
-        ela_session_cleanup(w);
+        IOEX_session_cleanup(w);
         sctxt->extra->init_flag = 0;
     }
 
@@ -682,7 +704,7 @@ static void sfree(TestContext *context, int argc, char *argv[])
 
 static void spfsvcadd(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    IOEXSession *session = context->session->session;
     int rc;
     PortForwardingProtocol protocol;
 
@@ -696,10 +718,10 @@ static void spfsvcadd(TestContext *context, int argc, char *argv[])
         return;
     }
 
-    rc = ela_session_add_service(session, argv[1], protocol, argv[3], argv[4]);
+    rc = IOEX_session_add_service(session, argv[1], protocol, argv[3], argv[4]);
     if (rc < 0) {
         robot_log_error("Add service %s failed (0x%x)\n", argv[1],
-                        ela_get_error());
+                        IOEX_get_error());
         robot_ack("spfsvcadd failed\n");
         return;
     }
@@ -710,18 +732,18 @@ static void spfsvcadd(TestContext *context, int argc, char *argv[])
 
 static void spfsvcremove(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    IOEXSession *session = context->session->session;
 
     CHK_ARGS(argc == 2);
 
-    ela_session_remove_service(session, argv[1]);
+    IOEX_session_remove_service(session, argv[1]);
 
     robot_log_debug("Service %s removed\n", argv[1]);
 }
 
 static void spf_open(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    IOEXSession *session = context->session->session;
     StreamContext *stream_ctxt = context->stream;
     PortForwardingProtocol protocol;
     int pfid;
@@ -738,16 +760,16 @@ static void spf_open(TestContext *context, int argc, char *argv[])
 
     // Double check.
     if (stream_ctxt->extra->portforwarding_id > 0) {
-        ela_stream_close_port_forwarding(session, stream_ctxt->stream_id,
+        IOEX_stream_close_port_forwarding(session, stream_ctxt->stream_id,
                                         stream_ctxt->extra->portforwarding_id);
         stream_ctxt->extra->portforwarding_id = -1;
     }
 
-    pfid = ela_stream_open_port_forwarding(session, stream_ctxt->stream_id,
+    pfid = IOEX_stream_open_port_forwarding(session, stream_ctxt->stream_id,
                                         argv[1], protocol, argv[3], argv[4]);
     if (pfid <= 0) {
         robot_log_error("Open portforwarding for service %s failed: 0x%x\n",
-                        argv[1], ela_get_error());
+                        argv[1], IOEX_get_error());
         robot_ack("spfopen failed\n");
         return;
     }
@@ -761,20 +783,20 @@ static void spf_open(TestContext *context, int argc, char *argv[])
 
 static void spf_close(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    IOEXSession *session = context->session->session;
     StreamContext *stream_ctxt = context->stream;
     int rc;
 
     CHK_ARGS(argc == 1);
 
     if (stream_ctxt->extra->portforwarding_id > 0) {
-        rc = ela_stream_close_port_forwarding(session, stream_ctxt->stream_id,
+        rc = IOEX_stream_close_port_forwarding(session, stream_ctxt->stream_id,
                                         stream_ctxt->extra->portforwarding_id);
         stream_ctxt->extra->portforwarding_id = -1;
 
         if (rc < 0) {
             robot_log_error("Close portforwarding failed: 0x%x\n",
-                            ela_get_error());
+                            IOEX_get_error());
             robot_ack("spfclose failed\n");
             return;
         }
@@ -808,19 +830,19 @@ static void cready2open(TestContext *context, int argc, char *argv[])
 
 static void cpend(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    IOEXSession *session = context->session->session;
     StreamContext *stream_ctxt = context->stream;
     int rc;
 
     CHK_ARGS(argc == 1);
 
-    rc = ela_stream_pend_channel(session, stream_ctxt->stream_id,
+    rc = IOEX_stream_pend_channel(session, stream_ctxt->stream_id,
                                  stream_ctxt->extra->channels[0].channel_id);
     if (rc < 0) {
         robot_log_error("Pending stream %d channel %d failed: 0x%x\n",
                         stream_ctxt->stream_id,
                         stream_ctxt->extra->channels[0].channel_id,
-                        ela_get_error());
+                        IOEX_get_error());
 
         robot_ack("cpend failed\n");
     } else {
@@ -830,19 +852,19 @@ static void cpend(TestContext *context, int argc, char *argv[])
 
 static void cresume(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    IOEXSession *session = context->session->session;
     StreamContext *stream_ctxt = context->stream;
     int rc;
 
     CHK_ARGS(argc == 1);
 
-    rc = ela_stream_resume_channel(session, stream_ctxt->stream_id,
+    rc = IOEX_stream_resume_channel(session, stream_ctxt->stream_id,
                                    stream_ctxt->extra->channels[0].channel_id);
     if (rc < 0) {
         robot_log_error("Resume stream %d channel %d failed: 0x%x\n",
                         stream_ctxt->stream_id,
                         stream_ctxt->extra->channels[0].channel_id,
-                        ela_get_error());
+                        IOEX_get_error());
 
         robot_ack("cresume failed\n");
     } else {

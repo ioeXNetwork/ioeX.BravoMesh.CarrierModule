@@ -19,6 +19,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -30,7 +51,7 @@
 #include <rc_mem.h>
 #include <vlog.h>
 
-#include "ela_session.h"
+#include "IOEX_session.h"
 #include "session.h"
 #include "channels.h"
 #include "portforwardings.h"
@@ -143,7 +164,7 @@ static void multiplex_handler_stop(StreamHandler *base, int error)
 static
 bool user_channel_open(Channel *ch, const char *cookie, void *context)
 {
-    ElaStream *s = (ElaStream *)context;
+    IOEXStream *s = (IOEXStream *)context;
 
     assert(s);
     assert(ch);
@@ -158,7 +179,7 @@ bool user_channel_open(Channel *ch, const char *cookie, void *context)
 static
 void user_channel_opened(Channel *ch, void *context)
 {
-    ElaStream *s = (ElaStream *)context;
+    IOEXStream *s = (IOEXStream *)context;
 
     assert(s);
     assert(ch);
@@ -170,7 +191,7 @@ void user_channel_opened(Channel *ch, void *context)
 static
 void user_channel_close(Channel *ch, CloseReason reason, void *context)
 {
-    ElaStream *s = (ElaStream *)context;
+    IOEXStream *s = (IOEXStream *)context;
 
     assert(s);
     assert(ch);
@@ -183,7 +204,7 @@ void user_channel_close(Channel *ch, CloseReason reason, void *context)
 static
 bool user_channel_data(Channel *ch, FlexBuffer *buf, void *context)
 {
-    ElaStream *s = (ElaStream *)context;
+    IOEXStream *s = (IOEXStream *)context;
 
     assert(s);
     assert(ch);
@@ -200,7 +221,7 @@ bool user_channel_data(Channel *ch, FlexBuffer *buf, void *context)
 static
 void user_channel_pending(Channel *ch, void *context)
 {
-    ElaStream *s = (ElaStream *)context;
+    IOEXStream *s = (IOEXStream *)context;
 
     assert(s);
     assert(ch);
@@ -212,7 +233,7 @@ void user_channel_pending(Channel *ch, void *context)
 static
 void user_channel_resume(Channel *ch, void *context)
 {
-    ElaStream *s = (ElaStream *)context;
+    IOEXStream *s = (IOEXStream *)context;
 
     assert(s);
     assert(ch);
@@ -662,19 +683,19 @@ int multiplex_handler_open_channel(Multiplexer *mux, ChannelType type,
         size = sizeof(Channel);
     } else {
         assert(0);
-        return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+        return IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS);
     }
 
     ch = (Channel *)rc_zalloc(size, channel_destroy);
     if (!ch)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     cid = ids_heap_alloc((IdsHeap *)&handler->channel_ids);
     if (cid < 0) {
         vlogE("Stream: %d multiplex handler has too many channels.",
               handler->base.stream->id);
         deref(ch);
-        return ELA_GENERAL_ERROR(ELAERR_LIMIT_EXCEEDED);
+        return IOEX_GENERAL_ERROR(IOEXERR_LIMIT_EXCEEDED);
     }
 
     ch->mux = handler;
@@ -724,7 +745,7 @@ static int multiplex_handler_close_channel(Multiplexer *mux, int cid)
 
     ch = channels_get(handler->channels, cid);
     if (!ch)
-        return ELA_GENERAL_ERROR(ELAERR_NOT_EXIST);
+        return IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST);
 
     // Remote channel id being 0 means the channel opened by local, and
     // still not received confirmed packet from remote peer.
@@ -756,17 +777,17 @@ int multiplex_handler_write_channel(Multiplexer *mux, int cid, FlexBuffer *buf)
 
     ch = channels_get(handler->channels, cid);
     if (!ch)
-        return ELA_GENERAL_ERROR(ELAERR_NOT_EXIST);
+        return IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST);
 
     if (ch->status != ChannelStatus_Open &&
         ch->status != ChannelStatus_Pending) {
         deref(ch);
-        return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     }
 
     if (ch->remote_id == 0) {
         deref(ch);
-        return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     }
 
     rc = multiplex_handler_send_packet(handler, PacketType_ChannelData, 0,
@@ -792,18 +813,18 @@ static int multiplex_handler_pend_channel(Multiplexer *mux, int cid)
 
     ch = channels_get(handler->channels, cid);
     if (!ch)
-        return ELA_GENERAL_ERROR(ELAERR_NOT_EXIST);
+        return IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST);
 
     if (ch->status != ChannelStatus_Open &&
         ch->status != ChannelStatus_Pending) {
 
         deref(ch);
-        return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     }
 
     if (ch->remote_id == 0) {
         deref(ch);
-        return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     }
 
     rc = multiplex_handler_send_packet(handler, PacketType_ChannelPending, 0,
@@ -828,18 +849,18 @@ static int multiplex_handler_resume_channel(Multiplexer *mux, int cid)
 
     ch = channels_get(handler->channels, cid);
     if (!ch)
-        return ELA_GENERAL_ERROR(ELAERR_NOT_EXIST);
+        return IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST);
 
     if (ch->status != ChannelStatus_Open &&
         ch->status != ChannelStatus_Pending) {
 
         deref(ch);
-        return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     }
 
     if (ch->remote_id == 0) {
         deref(ch);
-        return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     }
 
     rc = multiplex_handler_send_packet(handler, PacketType_ChannelResume, 0,
@@ -930,7 +951,7 @@ int multiplex_handler_open_portforwarding(Multiplexer *mux,
     assert(host && *host && port && *port);
 
     if (!handler->worker)
-        return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
 
     return handler->worker->open(handler->worker, service, protocol, host, port);
 }
@@ -986,10 +1007,10 @@ void multiplex_handler_on_state_changed(StreamHandler *base, int state)
     assert(base);
     assert(base->prev);
 
-    if (state >= ElaStreamState_closed) { //TODO:
+    if (state >= IOEXStreamState_closed) { //TODO:
         CloseReason reason;
 
-        reason = (state == ElaStreamState_closed ?
+        reason = (state == IOEXStreamState_closed ?
                   CloseReason_Normal : CloseReason_Error);
         multiplex_handler_close_channels(handler, reason);
     }
@@ -1018,7 +1039,7 @@ void multiplex_handler_destroy(void *p)
     vlogD("Stream: %d multiplex handler destroyed.", handler->base.stream->id);
 }
 
-int multiplex_handler_create(ElaStream *s, MultiplexHandler **handler)
+int multiplex_handler_create(IOEXStream *s, MultiplexHandler **handler)
 {
     MultiplexHandler *_handler;
     int rc;
@@ -1031,7 +1052,7 @@ int multiplex_handler_create(ElaStream *s, MultiplexHandler **handler)
 
     _handler = (MultiplexHandler *)rc_zalloc(sz, multiplex_handler_destroy);
     if (!handler)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     _handler->base.name = "Multiplex Handler";
     _handler->base.stream = s;
@@ -1057,13 +1078,13 @@ int multiplex_handler_create(ElaStream *s, MultiplexHandler **handler)
     _handler->channels = channels_create(256);
     if (!_handler->channels) {
         deref(handler);
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
     }
 
     rc = ids_heap_init(IDS_HEAP(_handler->channel_ids), MAX_CHANNEL_ID);
     if (rc != 0) {
         deref(handler);
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
     }
 
     multiplex_handler_set_channel_callbacks(_handler, ChannelType_User,

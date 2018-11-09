@@ -19,14 +19,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+ 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <CUnit/Basic.h>
 
-#include "ela_carrier.h"
+#include "IOEX_carrier.h"
 #include "cond.h"
 #include "tests.h"
 #include "test_helper.h"
@@ -35,11 +56,11 @@ struct CarrierContextExtra {
     char* from;
 
     // for friend request
-    ElaUserInfo info;
+    IOEXUserInfo info;
     char* hello;
     int len;
 
-    ElaConnectionStatus connection_status;
+    IOEXConnectionStatus connection_status;
 };
 
 static CarrierContextExtra extra = {
@@ -48,7 +69,7 @@ static CarrierContextExtra extra = {
     .hello  = NULL,
     .len    = 0,
 
-    .connection_status = ElaConnectionStatus_Disconnected
+    .connection_status = IOEXConnectionStatus_Disconnected
 };
 
 static inline void wakeup(void* context)
@@ -56,40 +77,40 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(IOEXCarrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
 static
-void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+void friend_added_cb(IOEXCarrier *w, const IOEXFriendInfo *info, void *context)
 {
     wakeup(context);
     test_log_debug("Friend %s added.\n", info->user_info.userid);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(IOEXCarrier *w, const char *friendid, void *context)
 {
     wakeup(context);
     test_log_debug("Friend %s removed.\n", friendid);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(IOEXCarrier *w, const char *friendid,
+                                 IOEXConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
     wakeup(context);
 
     wctxt->extra->connection_status = status;
-    wctxt->robot_online = (status == ElaConnectionStatus_Connected);
+    wctxt->robot_online = (status == IOEXConnectionStatus_Connected);
 
     test_log_debug("Robot connection status changed -> %s\n",
                     connection_str(status));
 }
 
 static
-void friend_request_cb(ElaCarrier *w, const char *userid, const ElaUserInfo *info,
+void friend_request_cb(IOEXCarrier *w, const char *userid, const IOEXUserInfo *info,
                        const char *hello, void* context)
 {
     CarrierContextExtra *extra = ((CarrierContext *)context)->extra;
@@ -101,7 +122,7 @@ void friend_request_cb(ElaCarrier *w, const char *userid, const ElaUserInfo *inf
     wakeup(context);
 }
 
-static ElaCallbacks callbacks = {
+static IOEXCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -144,16 +165,16 @@ static void test_add_friend(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[IOEX_MAX_ID_LEN + 1];
     int rc;
 
     test_context.context_reset(&test_context);
 
     rc = remove_friend_anyway(&test_context, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_FALSE_FATAL(IOEX_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_add_friend(wctxt->carrier, robotaddr, "hello");
+    rc = IOEX_add_friend(wctxt->carrier, robotaddr, "hello");
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
 #if 0 // Remote robot may already be friend of test peer.
@@ -164,24 +185,24 @@ static void test_add_friend(void)
     CU_ASSERT_STRING_EQUAL_FATAL(buf[1], "hello");
 #endif
 
-    ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    IOEX_get_userid(wctxt->carrier, userid, sizeof(userid));
     rc = robot_ctrl("faccept %s\n", userid);
     CU_ASSERT_FATAL(rc > 0);
 
     // wait for friend_added() callback to be invoked.
     cond_wait(wctxt->cond);
-    CU_ASSERT_TRUE(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE(IOEX_is_friend(wctxt->carrier, robotid));
     // wait for friend connection (online) callback to be invoked.
     cond_wait(wctxt->cond);
-    CU_ASSERT_TRUE(extra->connection_status == ElaConnectionStatus_Connected);
+    CU_ASSERT_TRUE(extra->connection_status == IOEXConnectionStatus_Connected);
 }
 
 static void test_accept_friend(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    char userid[ELA_MAX_ID_LEN + 1];
-    char useraddr[ELA_MAX_ADDRESS_LEN + 1];
+    char userid[IOEX_MAX_ID_LEN + 1];
+    char useraddr[IOEX_MAX_ADDRESS_LEN + 1];
     const char *hello = "hello";
     int rc;
 
@@ -189,10 +210,10 @@ static void test_accept_friend(void)
 
     rc = remove_friend_anyway(&test_context, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_FALSE_FATAL(IOEX_is_friend(wctxt->carrier, robotid));
 
-    (void)ela_get_userid(wctxt->carrier, userid, sizeof(userid));
-    (void)ela_get_address(wctxt->carrier, useraddr, sizeof(useraddr));
+    (void)IOEX_get_userid(wctxt->carrier, userid, sizeof(userid));
+    (void)IOEX_get_address(wctxt->carrier, useraddr, sizeof(useraddr));
 
     rc = robot_ctrl("fadd %s %s %s\n", userid, useraddr, hello);
     CU_ASSERT_FATAL(rc > 0);
@@ -207,16 +228,16 @@ static void test_accept_friend(void)
     CU_ASSERT_STRING_EQUAL_FATAL(extra->hello, hello);
     //TODO: test robot user info;
 
-    rc = ela_accept_friend(wctxt->carrier, robotid);
+    rc = IOEX_accept_friend(wctxt->carrier, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     // wait for friend added callback invoked;
     cond_wait(wctxt->cond);
-    CU_ASSERT_TRUE(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE(IOEX_is_friend(wctxt->carrier, robotid));
 
     // wait for friend connection (online) callback invoked.
     cond_wait(wctxt->cond);
-    CU_ASSERT_TRUE(extra->connection_status == ElaConnectionStatus_Connected);
+    CU_ASSERT_TRUE(extra->connection_status == IOEXConnectionStatus_Connected);
 }
 
 static void test_add_friend_be_friend(void)
@@ -228,11 +249,11 @@ static void test_add_friend_be_friend(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(IOEX_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_add_friend(wctxt->carrier, robotaddr, "hello");
+    rc = IOEX_add_friend(wctxt->carrier, robotaddr, "hello");
     CU_ASSERT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_ALREADY_EXIST));
+    CU_ASSERT_EQUAL(IOEX_get_error(), IOEX_GENERAL_ERROR(IOEXERR_ALREADY_EXIST));
 }
 
 static void test_add_self_be_friend(void)
@@ -240,13 +261,13 @@ static void test_add_self_be_friend(void)
     CarrierContext *wctxt = test_context.carrier;
     int rc;
 
-    char address[ELA_MAX_ADDRESS_LEN + 1];
+    char address[IOEX_MAX_ADDRESS_LEN + 1];
 
-    (void)ela_get_address(wctxt->carrier, address, sizeof(address));
-    rc = ela_add_friend(wctxt->carrier, address, "hello");
+    (void)IOEX_get_address(wctxt->carrier, address, sizeof(address));
+    rc = IOEX_add_friend(wctxt->carrier, address, "hello");
 
     CU_ASSERT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    CU_ASSERT_EQUAL(IOEX_get_error(), IOEX_GENERAL_ERROR(IOEXERR_INVALID_ARGS));
 }
 
 static CU_TestInfo cases[] = {

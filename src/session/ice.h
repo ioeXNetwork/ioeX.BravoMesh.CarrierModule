@@ -19,6 +19,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #ifndef __TRANSPORT_ICE_H__
 #define __TRANSPORT_ICE_H__
@@ -74,12 +95,12 @@ typedef struct IceWorker {
 } IceWorker;
 
 typedef struct IceTransport {
-    ElaTransport        base;
+    IOEXTransport        base;
     pthread_key_t       pj_thread_ctx;
 } IceTransport;
 
 typedef struct IceSession {
-    ElaSession          base;
+    IOEXSession          base;
 
     pj_ice_sess_role    role;
     char                ufrag[PJ_ICE_UFRAG_LEN+1];
@@ -87,7 +108,7 @@ typedef struct IceSession {
 } IceSession;
 
 typedef struct IceStream {
-    ElaStream           base;
+    IOEXStream           base;
     StreamHandler       *handler;
 
     struct timeval      local_timestamp;
@@ -112,7 +133,7 @@ typedef struct IceHandler {
     } remote;
 } IceHandler;
 
-int ice_transport_create(ElaTransport **transport);
+int ice_transport_create(IOEXTransport **transport);
 
 #ifdef __cplusplus
 }

@@ -19,6 +19,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include <assert.h>
 #include <stdlib.h>
@@ -46,7 +67,7 @@
 #include <vlog.h>
 
 #include "flex_buffer.h"
-#include "ela_session.h"
+#include "IOEX_session.h"
 #include "ice.h"
 #include "session.h"
 
@@ -255,7 +276,7 @@ int ice_worker_init(IceWorker *worker, IceTransportOptions *opts)
     worker->pool = pj_pool_create(&worker->cp.factory, name, 1024, 512, NULL);
     if (!worker->pool) {
         vlogE("Session: ICE worker %d create memory pool failed.", worker->base.id);
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
     }
 
     if (opts->stun_host)
@@ -288,7 +309,7 @@ int ice_worker_init(IceWorker *worker, IceTransportOptions *opts)
     if (status != PJ_SUCCESS) {
         vlogE("Session: ICE worker %d create timer heap failed: %s",
               worker->base.id, ice_strerror(status));
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     /* and create ioqueue for network I/O stuff */
@@ -296,7 +317,7 @@ int ice_worker_init(IceWorker *worker, IceTransportOptions *opts)
     if (status != PJ_SUCCESS) {
         vlogE("Session: ICE worker %d create I/O queue failed: %s",
               worker->base.id, ice_strerror(status));
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     worker->cfg.af = pj_AF_INET();
@@ -347,14 +368,14 @@ int ice_worker_init(IceWorker *worker, IceTransportOptions *opts)
     if (status != PJ_SUCCESS) {
         vlogE("Session: ICE worker %d register read event failed: %s",
               worker->base.id, ice_strerror(status));
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     status = ice_register_event(worker, &worker->write_key, NULL);
     if (status != 0) {
         vlogE("Session: ICE worker %d register write event failed: %s",
               worker->base.id, ice_strerror(status));
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     vlogD("Session: ICE worker %d initialized.", worker->base.id);
@@ -381,7 +402,7 @@ static int ice_worker_start(IceWorker *worker)
     if (status != PJ_SUCCESS) {
         vlogE("Session: ICE worker %d create worker thread failed: %s.",
               worker->base.id, ice_strerror(status));
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     vlogD("Session: ICE worker %d started.", worker->base.id);
@@ -443,7 +464,7 @@ static int ice_transport_init(IceTransport *transport)
 
     rc = pthread_key_create(&transport->pj_thread_ctx, free);
     if (rc != 0)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     pj_log_set_level(0);
     pj_log_set_log_func(ice_log_print);
@@ -452,19 +473,19 @@ static int ice_transport_init(IceTransport *transport)
     status = pj_init();
     if (status != PJ_SUCCESS) {
         vlogE("Session: Initialize ICE library failed: %s", ice_strerror(status));
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     status = pjlib_util_init();
     if (status != PJ_SUCCESS) {
         vlogE("Session: Initialize ICE library failed: %s", ice_strerror(status));
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     status = pjnath_init();
     if (status != PJ_SUCCESS) {
         vlogE("Session: Initialize ICE library failed: %s", ice_strerror(status));
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     vlogD("Session: ICE transport initialized.");
@@ -550,7 +571,7 @@ int ice_worker_create_timer(TransportWorker *base, int id, unsigned long interva
     timer = (struct PjTimer *)pj_pool_zalloc(worker->pool,
                                              sizeof(struct PjTimer));
     if (!timer)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     pj_timer_entry_init(&timer->entry, id, timer, ice_timer_callback);
     timer->worker = worker;
@@ -592,7 +613,7 @@ static int transport_workerid(void)
 }
 
 static
-int ice_worker_create(ElaTransport *transport, IceTransportOptions *opts,
+int ice_worker_create(IOEXTransport *transport, IceTransportOptions *opts,
                       TransportWorker **worker)
 {
     IceWorker *w;
@@ -605,7 +626,7 @@ int ice_worker_create(ElaTransport *transport, IceTransportOptions *opts,
 
     w = (IceWorker *)rc_zalloc(sizeof(IceWorker), ice_worker_destroy);
     if (!w)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     w->base.id = transport_workerid();
     w->regular = PJ_TRUE;
@@ -634,7 +655,7 @@ int ice_worker_create(ElaTransport *transport, IceTransportOptions *opts,
     return 0;
 }
 
-static int ice_session_init(ElaSession *base)
+static int ice_session_init(IOEXSession *base)
 {
     IceSession *session = (IceSession *)base;
     IceTransport *transport = (IceTransport *)session_get_transport(base);
@@ -662,7 +683,7 @@ static void ice_session_destroy(void *p)
     vlogD("Session: ICE session destroyed");
 }
 
-static bool ice_session_set_offer(ElaSession *base, bool offerer)
+static bool ice_session_set_offer(IOEXSession *base, bool offerer)
 {
     IceSession *session = (IceSession *)base;
 
@@ -717,17 +738,17 @@ static void stream_on_ice_complete(pj_ice_strans *ice_st, pj_ice_strans_op op,
 
     if (op == PJ_ICE_STRANS_OP_INIT) {
         if (status == PJ_SUCCESS) {
-            state = ElaStreamState_initialized;
+            state = IOEXStreamState_initialized;
         } else {
-            vlogE("Session: Stream initialization error (0x%x)", ELA_ICE_ERROR(status));
-            state = ElaStreamState_failed;
+            vlogE("Session: Stream initialization error (0x%x)", IOEX_ICE_ERROR(status));
+            state = IOEXStreamState_failed;
         }
     } else if (op == PJ_ICE_STRANS_OP_NEGOTIATION) {
         if (status == PJ_SUCCESS) {
-            state = ElaStreamState_connected;
+            state = IOEXStreamState_connected;
         } else {
-            vlogE("Session: Stream negotiation error (0x%x)", ELA_ICE_ERROR(status));
-            state = ElaStreamState_failed;
+            vlogE("Session: Stream negotiation error (0x%x)", IOEX_ICE_ERROR(status));
+            state = IOEXStreamState_failed;
         }
     } else {
         pj_grp_lock_release(lock);
@@ -772,8 +793,8 @@ static void stream_on_rx_data(pj_ice_strans *ice_st, unsigned comp, void *data,
         return;
     }
 
-    if (stream->base.state != ElaStreamState_connecting &&
-        stream->base.state != ElaStreamState_connected) {
+    if (stream->base.state != IOEXStreamState_connecting &&
+        stream->base.state != IOEXStreamState_connected) {
         vlogW("Stream: %d ICE state is %s, but received data from %s, ignore.",
               stream->base.id, state_name[stream->base.state],
               pj_sockaddr_print(src_addr, addr, sizeof(addr), 3));
@@ -794,7 +815,7 @@ static void stream_on_rx_data(pj_ice_strans *ice_st, unsigned comp, void *data,
 
     if (packet->pkttype == PKT_SHUTDOWN) {
         vlogD("Stream: %d ICE stream closed by remote.", stream->base.id);
-        notify_state_changed(stream->handler, ElaStreamState_closed);
+        notify_state_changed(stream->handler, IOEXStreamState_closed);
     } else if (packet->pkttype == PKT_KEEPALIVE) {
         vlogD("Stream: %d ICE stream receive keep-alive.", stream->base.id);
 
@@ -861,7 +882,7 @@ static int ice_handler_init(StreamHandler *base)
         deref(base->stream);
         vlogE("Stream: %d ICE handler init failed: %s.",
               base->stream->id, ice_strerror(status));
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     vlogD("Stream: %d ICE handler initialized.", base->stream->id);
@@ -877,9 +898,9 @@ static bool ice_stream_keepalive_callback(void *user_data)
     struct timeval now;
     long interval;
 
-    if (stream->base.state < ElaStreamState_connected)
+    if (stream->base.state < IOEXStreamState_connected)
         return true;
-    else if (stream->base.state > ElaStreamState_connected)
+    else if (stream->base.state > IOEXStreamState_connected)
         return false;
 
     gettimeofday(&now, NULL);
@@ -891,7 +912,7 @@ static bool ice_stream_keepalive_callback(void *user_data)
     if (interval >= (DEFAULT_TIMEOUT_INTERVAL * 1000)) {
         // Peer timeout, trade as close.
         vlogD("Session: Ice stream %d timeout.", stream->base.id);
-        notify_state_changed(stream->handler, ElaStreamState_closed);
+        notify_state_changed(stream->handler, IOEXStreamState_closed);
         return false;
     }
 
@@ -932,10 +953,10 @@ static int ice_handler_prepare(StreamHandler *base)
         return 0;
     }
 
-    if (stream->base.state != ElaStreamState_initialized) {
+    if (stream->base.state != IOEXStreamState_initialized) {
         vlogE("Stream: %d ICE stream not completely initialized.",
               stream->base.id);
-        return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     }
 
     ufrag = pj_str(session->ufrag);
@@ -943,16 +964,16 @@ static int ice_handler_prepare(StreamHandler *base)
 
     status = pj_ice_strans_init_ice(handler->st, session->role, &ufrag, &pwd);
     if (status != PJ_SUCCESS) {
-        state = ElaStreamState_failed;
+        state = IOEXStreamState_failed;
         vlogD("Stream: %d ICE handler prepare error: %s.", stream->base.id,
               ice_strerror(status));
     } else {
-        state = ElaStreamState_transport_ready;
+        state = IOEXStreamState_transport_ready;
         vlogD("Stream: %d ICE handler prepared.", stream->base.id);
     }
 
     notify_state_changed(base, state);
-    return status == PJ_SUCCESS ? 0 : ELA_ICE_ERROR(status);
+    return status == PJ_SUCCESS ? 0 : IOEX_ICE_ERROR(status);
 }
 
 static int ice_handler_start(StreamHandler *base)
@@ -967,13 +988,13 @@ static int ice_handler_start(StreamHandler *base)
     int rc;
 
     assert(handler->remote.cand_cnt > 0 && handler->remote.comp_cnt > 0);
-    assert(stream->base.state == ElaStreamState_transport_ready);
+    assert(stream->base.state == IOEXStreamState_transport_ready);
 
     prepare_thread_context(transport);
 
-    if (stream->base.state != ElaStreamState_transport_ready) {
+    if (stream->base.state != IOEXStreamState_transport_ready) {
         vlogE("Stream: %d ICE handler not ready to start.", stream->base.id);
-        return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+        return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
     }
 
     rc = ice_worker_create_timer(session->base.worker, stream->base.id | 0x00010000,
@@ -985,7 +1006,7 @@ static int ice_handler_start(StreamHandler *base)
         return rc;
     }
 
-    notify_state_changed(base, ElaStreamState_connecting);
+    notify_state_changed(base, IOEXStreamState_connecting);
 
     gettimeofday(&stream->local_timestamp, NULL);
     gettimeofday(&stream->remote_timestamp, NULL);
@@ -997,13 +1018,13 @@ static int ice_handler_start(StreamHandler *base)
     if (status == PJ_SUCCESS) {
         vlogD("Stream: %d ICE handler starting negotiation...", stream->base.id);
     } else {
-        notify_state_changed(base, ElaStreamState_failed);
+        notify_state_changed(base, IOEXStreamState_failed);
 
         vlogE("Stream: %d ICE handler negotiation failed: %s.",
               stream->base.id, ice_strerror(status));
     }
 
-    return (status == PJ_SUCCESS ? 0 : ELA_ICE_ERROR(status));
+    return (status == PJ_SUCCESS ? 0 : IOEX_ICE_ERROR(status));
 }
 
 static void ice_handler_stop(StreamHandler *base, int error)
@@ -1026,10 +1047,10 @@ static void ice_handler_stop(StreamHandler *base, int error)
         handler->stopping = 1;
     }
 
-    if (stream->base.state <= ElaStreamState_connected) {
+    if (stream->base.state <= IOEXStreamState_connected) {
         int state;
 
-        if (stream->base.state >= ElaStreamState_connecting) {
+        if (stream->base.state >= IOEXStreamState_connecting) {
             IcePacket packet;
             packet.version = 0;
             packet.pkttype = PKT_SHUTDOWN;
@@ -1039,7 +1060,7 @@ static void ice_handler_stop(StreamHandler *base, int error)
         }
 
         // TODO: synchronizedly or asynchronizedly.
-        state = (error == 0 ? ElaStreamState_closed : ElaStreamState_failed);
+        state = (error == 0 ? IOEXStreamState_closed : IOEXStreamState_failed);
         base->on_state_changed(base, state);
     }
 
@@ -1081,8 +1102,8 @@ int ice_handler_write_packet(IceHandler *handler, int comp, IcePacket *packet)
         vlogW("Session: ICE handler %d sending data error: %s", stream->base.id,
               ice_strerror(status));
 
-        return status == PJ_EBUSY ? ELA_GENERAL_ERROR(ELAERR_BUSY)
-                                  : ELA_ICE_ERROR(status);
+        return status == PJ_EBUSY ? IOEX_GENERAL_ERROR(IOEXERR_BUSY)
+                                  : IOEX_ICE_ERROR(status);
     }
 
     gettimeofday(&stream->local_timestamp, NULL);
@@ -1133,7 +1154,7 @@ static void ice_stream_destroy(void *p)
     vlogD("Stream: %d destroyed.", stream->base.id);
 }
 
-static int ice_stream_get_info(ElaStream *base, ElaTransportInfo *info)
+static int ice_stream_get_info(IOEXStream *base, IOEXTransportInfo *info)
 {
     IceStream *stream = (IceStream *)base;
     IceHandler *handler = (IceHandler *)stream->handler;
@@ -1142,11 +1163,11 @@ static int ice_stream_get_info(ElaStream *base, ElaTransportInfo *info)
     pj_ice_cand_type ltype, rtype;
 
     assert(base && info);
-    assert(base->state == ElaStreamState_connected);
+    assert(base->state == IOEXStreamState_connected);
 
     check = pj_ice_strans_get_valid_pair(handler->st, 1);
     if (!check) {
-        return ELA_ICE_ERROR(ELAERR_UNKNOWN);
+        return IOEX_ICE_ERROR(IOEXERR_UNKNOWN);
     }
 
     cand = check->lcand;
@@ -1186,25 +1207,25 @@ static int ice_stream_get_info(ElaStream *base, ElaTransportInfo *info)
     }
 
     if (ltype == PJ_ICE_CAND_TYPE_RELAYED || rtype == PJ_ICE_CAND_TYPE_RELAYED) {
-        info->topology = ElaNetworkTopology_RELAYED;
+        info->topology = IOEXNetworkTopology_RELAYED;
     } else if (ltype == PJ_ICE_CAND_TYPE_SRFLX ||  ltype == PJ_ICE_CAND_TYPE_PRFLX ||
                rtype == PJ_ICE_CAND_TYPE_SRFLX || rtype == PJ_ICE_CAND_TYPE_PRFLX) {
-        info->topology = ElaNetworkTopology_P2P;
+        info->topology = IOEXNetworkTopology_P2P;
     } else {
-        info->topology = ElaNetworkTopology_LAN;
+        info->topology = IOEXNetworkTopology_LAN;
     }
 
     return 0;
 }
 
-static void ice_stream_fire_state_changed(ElaStream *base, int state)
+static void ice_stream_fire_state_changed(IOEXStream *base, int state)
 {
     IceStream *stream = (IceStream *)base;
 
     notify_state_changed(stream->handler, state);
 }
 
-static void ice_stream_lock(ElaStream *base)
+static void ice_stream_lock(IOEXStream *base)
 {
     IceStream *stream = (IceStream *)base;
     IceHandler *handler = (IceHandler *)stream->handler;
@@ -1216,7 +1237,7 @@ static void ice_stream_lock(ElaStream *base)
     pj_grp_lock_acquire(lock);
 }
 
-static void ice_stream_unlock(ElaStream *base)
+static void ice_stream_unlock(IOEXStream *base)
 {
     IceStream *stream = (IceStream *)base;
     IceHandler *handler = (IceHandler *)stream->handler;
@@ -1228,7 +1249,7 @@ static void ice_stream_unlock(ElaStream *base)
     pj_grp_lock_release(lock);
 }
 
-static int ice_session_apply_remote_sdp(ElaSession *base,
+static int ice_session_apply_remote_sdp(IOEXSession *base,
                                         const char *sdp, size_t len)
 {
     IceSession *session = (IceSession *)base;
@@ -1252,17 +1273,17 @@ static int ice_session_apply_remote_sdp(ElaSession *base,
 
     pool = pj_pool_create(&worker->cp.factory, NULL, 4096, 512, NULL);
     if (!pool)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     status = pjmedia_sdp_parse(pool, (char *)sdp, len, &p_sdp);
     if (status != PJ_SUCCESS) {
         pj_pool_release(pool);
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
-    if (pj_strcmp2(&p_sdp->name, "elastos-ice-session") != 0) {
+    if (pj_strcmp2(&p_sdp->name, "IOEX-ice-session") != 0) {
         pj_pool_release(pool);
-        return ELA_GENERAL_ERROR(ELAERR_INVALID_SDP);
+        return IOEX_GENERAL_ERROR(IOEXERR_INVALID_SDP);
     }
 
     rc = (int)base58_decode(p_sdp->origin.user.ptr, p_sdp->origin.user.slen,
@@ -1270,7 +1291,7 @@ static int ice_session_apply_remote_sdp(ElaSession *base,
     if (rc < 0) {
         vlogE("Session: Parse peer public key error.");
         pj_pool_release(pool);
-        return ELA_GENERAL_ERROR(ELAERR_INVALID_SDP);
+        return IOEX_GENERAL_ERROR(IOEXERR_INVALID_SDP);
     }
 
     for (i = 0; i < p_sdp->attr_count; i++) {
@@ -1331,13 +1352,13 @@ rescan:
         fmt = atoi(media->desc.fmt[0].ptr);
 
         if (stream->base.unencrypt)
-            ops |= ELA_STREAM_PLAIN;
+            ops |= IOEX_STREAM_PLAIN;
         if (stream->base.multiplexing)
-            ops |= ELA_STREAM_MULTIPLEXING;
+            ops |= IOEX_STREAM_MULTIPLEXING;
         if (stream->base.reliable)
-            ops |= ELA_STREAM_RELIABLE;
+            ops |= IOEX_STREAM_RELIABLE;
         if (stream->base.portforwarding)
-            ops |= ELA_STREAM_PORT_FORWARDING;
+            ops |= IOEX_STREAM_PORT_FORWARDING;
 
         if (ops != fmt) {
             stream->base.deactivate = 1;
@@ -1369,7 +1390,7 @@ rescan:
                     memset(&handler->remote, 0, sizeof(handler->remote));
                     pj_pool_release(pool);
                     deref(stream);
-                    return ELA_GENERAL_ERROR(ELAERR_INVALID_SDP);
+                    return IOEX_GENERAL_ERROR(IOEXERR_INVALID_SDP);
                 }
 
                 if (strcmp(type, "host")==0)
@@ -1384,7 +1405,7 @@ rescan:
                     memset(&handler->remote, 0, sizeof(handler->remote));
                     pj_pool_release(pool);
                     deref(stream);
-                    return ELA_GENERAL_ERROR(ELAERR_INVALID_SDP);
+                    return IOEX_GENERAL_ERROR(IOEXERR_INVALID_SDP);
                 }
 
                 cand->comp_id = (pj_uint8_t)comp_id;
@@ -1429,7 +1450,7 @@ static const char *stream_type_str[] = {
     "message"
 };
 
-static int ice_session_encode_local_sdp(ElaSession *base,
+static int ice_session_encode_local_sdp(IOEXSession *base,
                                         char *sdp, size_t len)
 {
     IceSession *session = (IceSession *)base;
@@ -1459,14 +1480,14 @@ static int ice_session_encode_local_sdp(ElaSession *base,
 
     pool = pj_pool_create(&worker->cp.factory, NULL, 4096, 512, NULL);
     if (!pool)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     memset(&sdp_session, 0, sizeof(sdp_session));
 
     status = pj_gethostip(pj_AF_INET(), &addr);
     if (status != PJ_SUCCESS) {
         pj_pool_release(pool);
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     // SDP session origin (o=)
@@ -1474,7 +1495,7 @@ static int ice_session_encode_local_sdp(ElaSession *base,
     seconds = time(NULL);
     pk = base58_encode(base->public_key, sizeof(base->public_key), tmp, &tmplen);
     if (!pk)
-        return ELA_SYS_ERROR(ELAERR_INVALID_CREDENTIAL);
+        return IOEX_SYS_ERROR(IOEXERR_INVALID_CREDENTIAL);
 
     sdp_session.origin.user = pj_str(pk);
     sdp_session.origin.id = (pj_uint32_t)seconds;
@@ -1485,7 +1506,7 @@ static int ice_session_encode_local_sdp(ElaSession *base,
     pj_strdup2_with_null(pool, &sdp_session.origin.addr, str_addr);
 
     // SDP session subject (s=)
-    sdp_session.name = pj_str("elastos-ice-session");
+    sdp_session.name = pj_str("IOEX-ice-session");
 
     // SDP session attributes: ice-ufrag & ice-pwd
     ufrag_attr.name = pj_str("ice-ufrag");
@@ -1496,12 +1517,12 @@ static int ice_session_encode_local_sdp(ElaSession *base,
     status = pjmedia_sdp_session_add_attr(&sdp_session, &ufrag_attr);
     if (status != PJ_SUCCESS) {
         pj_pool_release(pool);
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
     status = pjmedia_sdp_session_add_attr(&sdp_session, &pwd_attr);
     if (status != PJ_SUCCESS) {
         pj_pool_release(pool);
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     if (base->crypto.enabled) {
@@ -1514,7 +1535,7 @@ static int ice_session_encode_local_sdp(ElaSession *base,
         status = pjmedia_sdp_session_add_attr(&sdp_session, &nonce_attr);
         if (status != PJ_SUCCESS) {
             pj_pool_release(pool);
-            return ELA_ICE_ERROR(status);
+            return IOEX_ICE_ERROR(status);
         }
     }
 
@@ -1541,14 +1562,14 @@ rescan:
         if ((!handler->st) || !pj_ice_strans_has_sess(handler->st)) {
             pj_pool_release(pool);
             deref(stream);
-            return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+            return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
         }
 
         ncomps = pj_ice_strans_get_running_comp_cnt(handler->st);
         if (!ncomps) {
             pj_pool_release(pool);
             deref(stream);
-            return ELA_GENERAL_ERROR(ELAERR_WRONG_STATE);
+            return IOEX_GENERAL_ERROR(IOEXERR_WRONG_STATE);
         }
 
         media = pj_pool_calloc(pool, 1, sizeof(pjmedia_sdp_media));
@@ -1560,7 +1581,7 @@ rescan:
         if (status != PJ_SUCCESS) {
             pj_pool_release(pool);
             deref(stream);
-            return ELA_ICE_ERROR(status);
+            return IOEX_ICE_ERROR(status);
         }
 
         media->desc.port = pj_sockaddr_get_port(&cand[0].addr);
@@ -1568,13 +1589,13 @@ rescan:
         media->desc.fmt_count = 1;
 
         if (stream->base.unencrypt)
-            ops |= ELA_STREAM_PLAIN;
+            ops |= IOEX_STREAM_PLAIN;
         if (stream->base.multiplexing)
-            ops |= ELA_STREAM_MULTIPLEXING;
+            ops |= IOEX_STREAM_MULTIPLEXING;
         if (stream->base.reliable)
-            ops |= ELA_STREAM_RELIABLE;
+            ops |= IOEX_STREAM_RELIABLE;
         if (stream->base.portforwarding)
-            ops |= ELA_STREAM_PORT_FORWARDING;
+            ops |= IOEX_STREAM_PORT_FORWARDING;
         sprintf(str_ops, "%d", ops);
 
         pj_strdup2_with_null(pool, &media->desc.fmt[0], str_ops);
@@ -1599,7 +1620,7 @@ rescan:
             if(status != PJ_SUCCESS) {
                 pj_pool_release(pool);
                 deref(stream);
-                return ELA_ICE_ERROR(status);
+                return IOEX_ICE_ERROR(status);
             }
 
             for (j = 0, candidate = cand; j < cand_cnt; j++, candidate++) {
@@ -1638,7 +1659,7 @@ rescan:
                 if (status != PJ_SUCCESS) {
                     pj_pool_release(pool);
                     deref(stream);
-                    return ELA_ICE_ERROR(status);
+                    return IOEX_ICE_ERROR(status);
                 }
             }
         }
@@ -1653,14 +1674,14 @@ rescan:
     status = pjmedia_sdp_validate(&sdp_session);
     if (status != PJ_SUCCESS) {
         pj_pool_release(pool);
-        return ELA_ICE_ERROR(status);
+        return IOEX_ICE_ERROR(status);
     }
 
     rc = pjmedia_sdp_print(&sdp_session, sdp, len);
     pj_pool_release(pool);
 
     if (rc < 0)
-        return ELA_GENERAL_ERROR(ELAERR_SDP_TOO_LONG);
+        return IOEX_GENERAL_ERROR(IOEXERR_SDP_TOO_LONG);
 
     return rc;
 }
@@ -1671,10 +1692,10 @@ static int ice_handler_create(IceStream *stream, StreamHandler **handler)
 
     h = (IceHandler *)rc_zalloc(sizeof(IceHandler), ice_handler_destroy);
     if (!h)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     h->base.name = "ICE Transport Handler";
-    h->base.stream = (ElaStream *)stream;
+    h->base.stream = (IOEXStream *)stream;
 
     h->base.init = ice_handler_init;
     h->base.prepare = ice_handler_prepare;
@@ -1688,7 +1709,7 @@ static int ice_handler_create(IceStream *stream, StreamHandler **handler)
     return 0;
 }
 
-static int ice_session_create_stream(ElaSession *base, ElaStream **stream)
+static int ice_session_create_stream(IOEXSession *base, IOEXStream **stream)
 {
     IceStream *s;
     StreamHandler *handler;
@@ -1696,7 +1717,7 @@ static int ice_session_create_stream(ElaSession *base, ElaStream **stream)
 
     s = (IceStream *)rc_zalloc(sizeof(IceStream), ice_stream_destroy);
     if (!s)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     s->base.get_info = ice_stream_get_info;
     s->base.fire_state_changed = ice_stream_fire_state_changed;
@@ -1714,17 +1735,17 @@ static int ice_session_create_stream(ElaSession *base, ElaStream **stream)
 
     vlogD("Session: ICE stream & handler created");
 
-    *stream = (ElaStream *)s;
+    *stream = (IOEXStream *)s;
     return 0;
 }
 
-static int ice_transport_create_session(ElaTransport *base, ElaSession **session)
+static int ice_transport_create_session(IOEXTransport *base, IOEXSession **session)
 {
     IceSession *s;
 
     s = (IceSession *)rc_zalloc(sizeof(IceSession), ice_session_destroy);
     if (!s)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     s->base.init = ice_session_init;
     s->base.create_stream = ice_session_create_stream;
@@ -1735,11 +1756,11 @@ static int ice_transport_create_session(ElaTransport *base, ElaSession **session
 
     vlogD("Session: ICE session created");
 
-    *session = (ElaSession *)s;
+    *session = (IOEXSession *)s;
     return 0;
 }
 
-int ice_transport_create(ElaTransport **transport)
+int ice_transport_create(IOEXTransport **transport)
 {
     IceTransport *t;
     int rc;
@@ -1748,7 +1769,7 @@ int ice_transport_create(ElaTransport **transport)
 
     t = (IceTransport *)rc_zalloc(sizeof(IceTransport), ice_transport_destroy);
     if (!t)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     rc = ice_transport_init(t);
     if (rc != 0) {
@@ -1761,6 +1782,6 @@ int ice_transport_create(ElaTransport **transport)
 
     vlogD("Session: ICE transport created.");
 
-    *transport = (ElaTransport *)t;
+    *transport = (IOEXTransport *)t;
     return 0;
 }

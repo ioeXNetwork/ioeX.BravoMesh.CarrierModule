@@ -19,6 +19,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+ 
 
 #include <stdlib.h>
 #include <assert.h>
@@ -29,8 +51,8 @@
 #include <sys/time.h>
 #include <pthread.h>
 
-#include "ela_carrier.h"
-#include "ela_session.h"
+#include "IOEX_carrier.h"
+#include "IOEX_session.h"
 #include "cond.h"
 #include "tests.h"
 #include "test_helper.h"
@@ -43,35 +65,35 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(IOEXCarrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
 static
-void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+void friend_added_cb(IOEXCarrier *w, const IOEXFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(IOEXCarrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(IOEXCarrier *w, const char *friendid,
+                                 IOEXConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
     wakeup(context);
-    wctxt->robot_online = (status == ElaConnectionStatus_Connected);
+    wctxt->robot_online = (status == IOEXConnectionStatus_Connected);
 
     test_log_debug("Robot connection status changed -> %s\n",
                     connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static IOEXCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -98,7 +120,7 @@ static CarrierContext carrier_context = {
     .extra = NULL
 };
 
-static void session_request_complete_callback(ElaSession *ws, int status,
+static void session_request_complete_callback(IOEXSession *ws, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = (SessionContext *)context;
@@ -111,7 +133,7 @@ static void session_request_complete_callback(ElaSession *ws, int status,
     if (status == 0) {
         int rc;
 
-        rc = ela_session_start(ws, sdp, len);
+        rc = IOEX_session_start(ws, sdp, len);
         CU_ASSERT_EQUAL(rc, 0);
     }
 
@@ -160,15 +182,15 @@ static StreamContextExtra stream_extra = {
 
 };
 
-static void stream_on_data(ElaSession *ws, int stream,
+static void stream_on_data(IOEXSession *ws, int stream,
                            const void *data, size_t len, void *context)
 {
     test_log_debug("Stream [%d] received data [%.*s]\n", stream, (int)len,
                     (char*)data);
 }
 
-static void stream_state_changed(ElaSession *ws, int stream,
-                                 ElaStreamState state, void *context)
+static void stream_state_changed(IOEXSession *ws, int stream,
+                                 IOEXStreamState state, void *context)
 {
     StreamContext *stream_ctxt = (StreamContext *)context;
 
@@ -181,7 +203,7 @@ static void stream_state_changed(ElaSession *ws, int stream,
     cond_signal(stream_ctxt->cond);
 }
 
-static bool on_channel_open(ElaSession *ws, int stream, int channel,
+static bool on_channel_open(IOEXSession *ws, int stream, int channel,
                             const char *cookie, void *context)
 {
     test_log_debug("Stream request open new channel %d.\n", channel);
@@ -189,7 +211,7 @@ static bool on_channel_open(ElaSession *ws, int stream, int channel,
 }
 
 static
-void on_channel_opened(ElaSession *ws, int stream, int channel, void *context)
+void on_channel_opened(IOEXSession *ws, int stream, int channel, void *context)
 {
     StreamContextExtra *extra = ((StreamContext *)context)->extra;
 
@@ -203,7 +225,7 @@ void on_channel_opened(ElaSession *ws, int stream, int channel, void *context)
     cond_signal(extra->channel_cond);
 }
 
-static void on_channel_close(ElaSession *ws, int stream, int channel,
+static void on_channel_close(IOEXSession *ws, int stream, int channel,
                              CloseReason reason, void *context)
 {
     StreamContextExtra *extra = ((StreamContext *)context)->extra;
@@ -224,7 +246,7 @@ static void on_channel_close(ElaSession *ws, int stream, int channel,
     cond_signal(extra->channel_cond);
 }
 
-static bool on_channel_data(ElaSession *ws, int stream, int channel,
+static bool on_channel_data(IOEXSession *ws, int stream, int channel,
                             const void *data, size_t len, void *context)
 {
     StreamContextExtra *extra = ((StreamContext *)context)->extra;
@@ -236,7 +258,7 @@ static bool on_channel_data(ElaSession *ws, int stream, int channel,
     return true;
 }
 
-static void on_channel_pending(ElaSession *ws, int stream, int channel,
+static void on_channel_pending(IOEXSession *ws, int stream, int channel,
                                void *context)
 {
     StreamContextExtra *extra = ((StreamContext *)context)->extra;
@@ -246,7 +268,7 @@ static void on_channel_pending(ElaSession *ws, int stream, int channel,
     cond_signal(extra->channel_cond);
 }
 
-static void on_channel_resume(ElaSession *ws, int stream, int channel,
+static void on_channel_resume(IOEXSession *ws, int stream, int channel,
                               void *context)
 {
     StreamContextExtra *extra = ((StreamContext *)context)->extra;
@@ -256,7 +278,7 @@ static void on_channel_resume(ElaSession *ws, int stream, int channel,
     cond_signal(extra->channel_cond);
 }
 
-static ElaStreamCallbacks stream_callbacks = {
+static IOEXStreamCallbacks stream_callbacks = {
     .stream_data = stream_on_data,
     .state_changed = stream_state_changed,
     .channel_open = on_channel_open,
@@ -306,7 +328,7 @@ static TestContext test_context = {
     .context_reset = test_context_reset
 };
 
-static int write_channel_data(ElaSession *session, int stream, int channel,
+static int write_channel_data(IOEXSession *session, int stream, int channel,
                               char *data, size_t len)
 {
     size_t left;
@@ -317,16 +339,16 @@ static int write_channel_data(ElaSession *session, int stream, int channel,
     pos  = data;
 
     while(left > 0) {
-        rc = (int)ela_stream_write_channel(session, stream, channel, pos, left);
+        rc = (int)IOEX_stream_write_channel(session, stream, channel, pos, left);
         if (rc == 0) {
             assert(0);
         } else if (rc < 0) {
-            if (ela_get_error() == ELA_GENERAL_ERROR(ELAERR_BUSY)) {
+            if (IOEX_get_error() == IOEX_GENERAL_ERROR(IOEXERR_BUSY)) {
                 usleep(100);
                 continue;
             } else {
                 test_log_error("Write channel data failed (0x%x)\n",
-                               ela_get_error());
+                               IOEX_get_error());
                 return -1;
             }
         } else {
@@ -428,13 +450,13 @@ static void *bulk_multiple_channels_write_routine(void *arg)
 
     for (i = 0; i < MAX_CHANNEL_COUNT; i++) {
         extra->channel_count = i + 1;
-        extra->channel_id[i] = ela_stream_open_channel(ctxt->session->session,
+        extra->channel_id[i] = IOEX_stream_open_channel(ctxt->session->session,
                                             ctxt->stream->stream_id, "cookie");
         if (extra->channel_id[i] < 0) {
             test_log_error("Open new channel %d failed.\n", i + 1);
             //reclaim opened channels
             for (i = 0; i < extra->channel_count; i++)
-                ela_stream_close_channel(ctxt->session->session,
+                IOEX_stream_close_channel(ctxt->session->session,
                                 ctxt->stream->stream_id, extra->channel_id[i]);
             extra->channel_count = 0;
             return NULL;
@@ -465,7 +487,7 @@ static void *bulk_multiple_channels_write_routine(void *arg)
                                     extra->channel_id[i], packet, pkt_sz);
             if (rc < 0) {
                 for (i = 0; i < MAX_CHANNEL_COUNT; i++)
-                    ela_stream_close_channel(ctxt->session->session,
+                    IOEX_stream_close_channel(ctxt->session->session,
                                     ctxt->stream->stream_id, extra->channel_id[i]);
                 return NULL;
             }
@@ -480,7 +502,7 @@ static void *bulk_multiple_channels_write_routine(void *arg)
                                     extra->channel_id[i], packet, pkt_sz);
             if (rc < 0) {
                 for (i = 0; i < MAX_CHANNEL_COUNT; i++)
-                    ela_stream_close_channel(ctxt->session->session,
+                    IOEX_stream_close_channel(ctxt->session->session,
                                     ctxt->stream->stream_id, extra->channel_id[i]);
                 return NULL;
             }
@@ -496,7 +518,7 @@ static void *bulk_multiple_channels_write_routine(void *arg)
                    (int)(duration / 1000), (int)(duration % 1000));
 
     for (i = 0; i < MAX_CHANNEL_COUNT; i++) {
-        ela_stream_close_channel(ctxt->session->session, ctxt->stream->stream_id,
+        IOEX_stream_close_channel(ctxt->session->session, ctxt->stream->stream_id,
                                      extra->channel_id[i]);
     }
 
@@ -545,7 +567,7 @@ static int bulk_write_channel_internal(TestContext *context)
     TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
     /*open channel*/
-    extra->channel_id[0] = ela_stream_open_channel(context->session->session,
+    extra->channel_id[0] = IOEX_stream_open_channel(context->session->session,
                                             context->stream->stream_id, "cookie");
     TEST_ASSERT_TRUE(extra->channel_id[0] > 0);
 
@@ -579,7 +601,7 @@ static int bulk_write_channel_internal(TestContext *context)
     if (rc < 0)
         test_log_error("stream channel write failed.\n");
 
-    rc = ela_stream_close_channel(context->session->session,
+    rc = IOEX_stream_close_channel(context->session->session,
                             context->stream->stream_id, extra->channel_id[0]);
     extra->channel_id[0] = -1;
     TEST_ASSERT_TRUE(rc == 0);
@@ -591,7 +613,7 @@ static int bulk_write_channel_internal(TestContext *context)
 
 cleanup:
     if (extra->channel_id[0]> 0)
-        ela_stream_close_channel(context->session->session,
+        IOEX_stream_close_channel(context->session->session,
                             context->stream->stream_id, extra->channel_id[0]);
     return -1;
 }
@@ -621,21 +643,21 @@ cleanup:
 static inline
 void channel_bulk_write(int stream_options)
 {
-    test_stream_scheme(ElaStreamType_text, stream_options,
+    test_stream_scheme(IOEXStreamType_text, stream_options,
                        &test_context, bulk_write_channel_internal);
 }
 
 static inline
 void multiple_channels_bulk_write(int stream_options)
 {
-    test_stream_scheme(ElaStreamType_text, stream_options,
+    test_stream_scheme(IOEXStreamType_text, stream_options,
                        &test_context, bulk_write_multiple_channels_internal);
 }
 
 static void test_session_channel(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
 
     channel_bulk_write(stream_options);
 }
@@ -643,8 +665,8 @@ static void test_session_channel(void)
 static void test_session_channel_plain(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_PLAIN;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_PLAIN;
 
     channel_bulk_write(stream_options);
 }
@@ -652,8 +674,8 @@ static void test_session_channel_plain(void)
 static void test_session_channel_reliable(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_RELIABLE;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_RELIABLE;
 
     channel_bulk_write(stream_options);
 }
@@ -661,9 +683,9 @@ static void test_session_channel_reliable(void)
 static void test_session_channel_reliable_plain(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_PLAIN;
+    stream_options |= IOEX_STREAM_RELIABLE;
 
     channel_bulk_write(stream_options);
 }
@@ -671,7 +693,7 @@ static void test_session_channel_reliable_plain(void)
 static void test_session_multiple_channels(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
 
     multiple_channels_bulk_write(stream_options);
 }
@@ -679,8 +701,8 @@ static void test_session_multiple_channels(void)
 static void test_session_multiple_channels_plain(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_PLAIN;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_PLAIN;
 
     multiple_channels_bulk_write(stream_options);
 }
@@ -688,8 +710,8 @@ static void test_session_multiple_channels_plain(void)
 static void test_session_multiple_channels_reliable(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_RELIABLE;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_RELIABLE;
 
     multiple_channels_bulk_write(stream_options);
 }
@@ -697,9 +719,9 @@ static void test_session_multiple_channels_reliable(void)
 static void test_session_multiple_channels_reliable_plain(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
+    stream_options |= IOEX_STREAM_MULTIPLEXING;
+    stream_options |= IOEX_STREAM_PLAIN;
+    stream_options |= IOEX_STREAM_RELIABLE;
 
     multiple_channels_bulk_write(stream_options);
 }

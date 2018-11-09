@@ -19,6 +19,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #ifndef __STREAMHANDLER_H__
 #define __STREAMHANDLER_H__
@@ -29,14 +50,14 @@
 extern "C" {
 #endif
 
-typedef struct ElaStream ElaStream;
+typedef struct IOEXStream IOEXStream;
 typedef struct StreamHandler StreamHandler;
 typedef struct FlexBuffer FlexBuffer;
 
 struct StreamHandler {
     const char *name;
 
-    ElaStream *stream;
+    IOEXStream *stream;
 
     StreamHandler *prev;
     StreamHandler *next;
@@ -115,9 +136,9 @@ void default_handler_on_state_changed(StreamHandler *handler, int state)
     handler->prev->on_state_changed(handler->prev, state);
 }
 
-int crypto_handler_create(ElaStream *s, StreamHandler **handler);
+int crypto_handler_create(IOEXStream *s, StreamHandler **handler);
 
-int reliable_handler_create(ElaStream *s, StreamHandler **handler);
+int reliable_handler_create(IOEXStream *s, StreamHandler **handler);
 
 #ifdef __cplusplus
 }

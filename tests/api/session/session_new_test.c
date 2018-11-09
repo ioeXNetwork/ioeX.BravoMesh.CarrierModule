@@ -19,13 +19,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+ 
 
 #include <stdlib.h>
 #include <unistd.h>
 #include <CUnit/Basic.h>
 
-#include "ela_carrier.h"
-#include "ela_session.h"
+#include "IOEX_carrier.h"
+#include "IOEX_session.h"
 #include "cond.h"
 #include "tests.h"
 #include "test_helper.h"
@@ -36,35 +58,35 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(IOEXCarrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
 static
-void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+void friend_added_cb(IOEXCarrier *w, const IOEXFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(IOEXCarrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(IOEXCarrier *w, const char *friendid,
+                                 IOEXConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
     wakeup(context);
-    wctxt->robot_online = (status == ElaConnectionStatus_Connected);
+    wctxt->robot_online = (status == IOEXConnectionStatus_Connected);
 
     test_log_debug("Robot connection status changed -> %s\n",
                     connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static IOEXCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -128,21 +150,21 @@ void new_session_with_friend(TestContext *context)
 
     rc = add_friend_anyway(context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(IOEX_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_session_init(wctxt->carrier, NULL, NULL);
+    rc = IOEX_session_init(wctxt->carrier, NULL, NULL);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    sctxt->session = ela_session_new(wctxt->carrier, robotid);
+    sctxt->session = IOEX_session_new(wctxt->carrier, robotid);
     TEST_ASSERT_TRUE(sctxt->session != NULL);
 
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        IOEX_session_close(sctxt->session);
         sctxt->session = NULL;
     }
 
 cleanup:
-    ela_session_cleanup(wctxt->carrier);
+    IOEX_session_cleanup(wctxt->carrier);
 }
 
 static void test_new_session(void)
@@ -161,17 +183,17 @@ void new_session_with_stranger(TestContext *context)
 
     rc = remove_friend_anyway(context, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_FALSE_FATAL(IOEX_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_session_init(wctxt->carrier, NULL, NULL);
+    rc = IOEX_session_init(wctxt->carrier, NULL, NULL);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    sctxt->session = ela_session_new(wctxt->carrier, robotid);
+    sctxt->session = IOEX_session_new(wctxt->carrier, robotid);
     TEST_ASSERT_TRUE(!sctxt->session);
-    TEST_ASSERT_TRUE(ela_get_error() == ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    TEST_ASSERT_TRUE(IOEX_get_error() == IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
 
 cleanup:
-    ela_session_cleanup(wctxt->carrier);
+    IOEX_session_cleanup(wctxt->carrier);
 }
 
 static void test_new_session_with_stranger(void)
@@ -189,11 +211,11 @@ static void new_session_without_init(TestContext *context)
 
     rc = add_friend_anyway(context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(IOEX_is_friend(wctxt->carrier, robotid));
 
-    sctxt->session = ela_session_new(wctxt->carrier, robotid);
+    sctxt->session = IOEX_session_new(wctxt->carrier, robotid);
     CU_ASSERT_PTR_NULL(sctxt->session);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(IOEX_get_error(), IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
 }
 
 static void test_new_session_without_init(void)

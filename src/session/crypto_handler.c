@@ -19,6 +19,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include <stdlib.h>
 #include <assert.h>
@@ -39,7 +60,7 @@ typedef struct CryptoHandler {
 static
 ssize_t crypto_handler_write(StreamHandler *handler, FlexBuffer *buf)
 {
-    ElaSession *ws = handler->stream->session;
+    IOEXSession *ws = handler->stream->session;
     FlexBuffer *cipher_buf;
     ssize_t cipher_len;
     ssize_t written;
@@ -65,7 +86,7 @@ ssize_t crypto_handler_write(StreamHandler *handler, FlexBuffer *buf)
     if (cipher_len <= 0) {
         vlogE("Stream: %d crypto handler encrypt data error.",
               handler->stream->id);
-        return ELA_GENERAL_ERROR(ELAERR_ENCRYPT);
+        return IOEX_GENERAL_ERROR(IOEXERR_ENCRYPT);
     } else {
         vlogT("Stream: %d crypto handler encrypted %zu bytes data.",
               handler->stream->id, cipher_len - ZERO_BYTES);
@@ -83,7 +104,7 @@ ssize_t crypto_handler_write(StreamHandler *handler, FlexBuffer *buf)
 static
 void crypto_handler_on_rx_data(StreamHandler *handler, FlexBuffer *buf)
 {
-    ElaSession *ws = handler->stream->session;
+    IOEXSession *ws = handler->stream->session;
     FlexBuffer *plain_buf;
     ssize_t plain_len;
 
@@ -131,13 +152,13 @@ static void crypto_handler_destroy(void *p)
     vlogD("Stream: %d crypto handler destroyed.", handler->base.stream->id);
 }
 
-int crypto_handler_create(ElaStream *s, StreamHandler **handler)
+int crypto_handler_create(IOEXStream *s, StreamHandler **handler)
 {
     CryptoHandler *_handler = NULL;
 
     _handler = (CryptoHandler *)rc_zalloc(sizeof(CryptoHandler), crypto_handler_destroy);
     if (!_handler)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     _handler->base.name = "Crypto Handler";
     _handler->base.stream = s;

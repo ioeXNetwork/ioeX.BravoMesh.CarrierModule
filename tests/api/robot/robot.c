@@ -19,6 +19,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+ 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,13 +52,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "ela_carrier.h"
-#include "ela_session.h"
+#include "IOEX_carrier.h"
+#include "IOEX_session.h"
 #include "cmd.h"
 #include "tests.h"
 #include "test_helper.h"
 
-static void print_user_info(const ElaUserInfo* info)
+static void print_user_info(const IOEXUserInfo* info)
 {
     robot_log_debug("       userid: %s\n", info->userid);
     robot_log_debug("         name: %s\n", info->name);
@@ -48,7 +70,7 @@ static void print_user_info(const ElaUserInfo* info)
     robot_log_debug("       region: %s\n", info->region);
 }
 
-void print_friend_info(const ElaFriendInfo* info, int order)
+void print_friend_info(const IOEXFriendInfo* info, int order)
 {
     if (order > 0)
         robot_log_debug(" friend %d: \n", order);
@@ -58,7 +80,7 @@ void print_friend_info(const ElaFriendInfo* info, int order)
     robot_log_debug("     presence: %s\n", info->presence);
 }
 
-static void idle_cb(ElaCarrier *w, void *context)
+static void idle_cb(IOEXCarrier *w, void *context)
 {
     char *cmd = read_cmd();
 
@@ -68,27 +90,27 @@ static void idle_cb(ElaCarrier *w, void *context)
     }
 }
 
-static void connection_status_cb(ElaCarrier *w, ElaConnectionStatus status,
+static void connection_status_cb(IOEXCarrier *w, IOEXConnectionStatus status,
                                  void *context)
 {
     robot_log_debug("Robot connection status changed -> %s\n",
                     connection_str(status));
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(IOEXCarrier *w, void *context)
 {
-    char address[ELA_MAX_ADDRESS_LEN + 1];
-    char robotid[ELA_MAX_ID_LEN + 1];
+    char address[IOEX_MAX_ADDRESS_LEN + 1];
+    char robotid[IOEX_MAX_ID_LEN + 1];
 
-    ela_get_userid(w, robotid, sizeof(robotid));
-    ela_get_address(w, address, sizeof(address));
+    IOEX_get_userid(w, robotid, sizeof(robotid));
+    IOEX_get_address(w, address, sizeof(address));
     
     robot_log_info("Robot is ready\n");
     robot_ack("ready %s %s\n", robotid, address);
 }
 
 static
-void self_info_cb(ElaCarrier *w, const ElaUserInfo *info, void *context)
+void self_info_cb(IOEXCarrier *w, const IOEXUserInfo *info, void *context)
 {
     robot_log_debug("Received current user information: \n");
     print_user_info(info);
@@ -96,7 +118,7 @@ void self_info_cb(ElaCarrier *w, const ElaUserInfo *info, void *context)
 }
 
 static
-bool friend_list_cb(ElaCarrier* w, const ElaFriendInfo *info, void *context)
+bool friend_list_cb(IOEXCarrier* w, const IOEXFriendInfo *info, void *context)
 {
     static bool grouped = false;
     static int idx = 1;
@@ -120,15 +142,15 @@ bool friend_list_cb(ElaCarrier* w, const ElaFriendInfo *info, void *context)
     return true;
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(IOEXCarrier *w, const char *friendid,
+                                 IOEXConnectionStatus status, void *context)
 {
     robot_log_debug("Friend %s's connection status changed -> %s\n",
                     friendid, connection_str(status));
 }
 
-static void friend_info_cb(ElaCarrier *w, const char *friendid,
-                          const ElaFriendInfo *info, void *context)
+static void friend_info_cb(IOEXCarrier *w, const char *friendid,
+                          const IOEXFriendInfo *info, void *context)
 {
     robot_log_debug("Friend %s's information changed ->\n", friendid);
     print_friend_info(info, 0);
@@ -141,15 +163,15 @@ static const char *presence_name[] = {
     "Busy"
 };
 
-static void friend_presence_cb(ElaCarrier *w, const char *friendid,
-                               ElaPresenceStatus status, void *context)
+static void friend_presence_cb(IOEXCarrier *w, const char *friendid,
+                               IOEXPresenceStatus status, void *context)
 {
     robot_log_info("Friend %s's presence changed -> %s\n", friendid,
                    presence_name[status]);
 }
 
-static void friend_request_cb(ElaCarrier *w, const char *userid,
-                const ElaUserInfo *info, const char *hello, void *context)
+static void friend_request_cb(IOEXCarrier *w, const char *userid,
+                const IOEXUserInfo *info, const char *hello, void *context)
 {
     robot_log_debug("Received friend request from user %s\n", userid);
     print_user_info(info);
@@ -157,10 +179,10 @@ static void friend_request_cb(ElaCarrier *w, const char *userid,
 
     if (strcmp(hello, "auto-reply") == 0) {
         int rc;
-        rc = ela_accept_friend(w, userid);
+        rc = IOEX_accept_friend(w, userid);
         if (rc < 0) {
             robot_log_error("Accept friend request from %s error (0x%x)\n",
-                            userid, ela_get_error());
+                            userid, IOEX_get_error());
         } else {
             robot_log_debug("Accept friend request from %s success\n", userid);
         }
@@ -172,7 +194,7 @@ static void friend_request_cb(ElaCarrier *w, const char *userid,
     }
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info,
+static void friend_added_cb(IOEXCarrier *w, const IOEXFriendInfo *info,
                             void *context)
 {
     robot_log_info("New friend %s added\n", info->user_info.userid);
@@ -180,7 +202,7 @@ static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info,
     robot_log_info("\n");
 }
 
-static void friend_removed_cb(ElaCarrier* w, const char* friendid, void *context)
+static void friend_removed_cb(IOEXCarrier* w, const char* friendid, void *context)
 {
     robot_log_info("Friend %s is removed\n", friendid);
 #if 0
@@ -188,7 +210,7 @@ static void friend_removed_cb(ElaCarrier* w, const char* friendid, void *context
 #endif
 }
 
-static void friend_message_cb(ElaCarrier *w, const char *from,
+static void friend_message_cb(IOEXCarrier *w, const char *from,
                              const void *msg, size_t len, void *context)
 {
     robot_log_debug("Received message from %s\n", from);
@@ -198,7 +220,7 @@ static void friend_message_cb(ElaCarrier *w, const char *from,
     robot_ack("%s\n", msg);
 }
 
-static void friend_invite_cb(ElaCarrier *w, const char *from,
+static void friend_invite_cb(IOEXCarrier *w, const char *from,
                              const void *data, size_t len, void *context)
 {
     robot_log_debug("Recevied friend invite from %s\n", from);
@@ -208,16 +230,16 @@ static void friend_invite_cb(ElaCarrier *w, const char *from,
 }
 static void signal_handler(int signum)
 {
-    ElaCarrier *w = test_context.carrier->carrier;
+    IOEXCarrier *w = test_context.carrier->carrier;
 
     printf("Receive unexpected signal %d, check your code!\n", signum);
     sleep(5);
 
     if (w)
-        ela_kill(w);
+        IOEX_kill(w);
 }
 
-static ElaCallbacks callbacks = {
+static IOEXCallbacks callbacks = {
     .idle            = idle_cb,
     .connection_status = connection_status_cb,
     .ready           = ready_cb,
@@ -247,11 +269,11 @@ static void log_print(const char *format, va_list args)
 
 int robot_main(int argc, char *argv[])
 {
-    ElaCarrier *w;
+    IOEXCarrier *w;
     int rc;
     char datadir[PATH_MAX];
 
-    ElaOptions opts = {
+    IOEXOptions opts = {
         .udp_enabled     = true,
         .bootstraps      = NULL,
         .bootstraps_size = global_config.bootstraps_size,
@@ -292,23 +314,23 @@ int robot_main(int argc, char *argv[])
     //setlinebuf(stdout);
     robot_ctrl_nonblock();
 
-    ela_log_init(global_config.robot.loglevel, NULL, log_print);
+    IOEX_log_init(global_config.robot.loglevel, NULL, log_print);
 
-    w = ela_new(&opts, &callbacks, &test_context);
+    w = IOEX_new(&opts, &callbacks, &test_context);
     free(opts.bootstraps);
 
     if (!w) {
         robot_ack("failed\n");
-        robot_log_error("Carrier new error (0x%x)\n", ela_get_error());
+        robot_log_error("Carrier new error (0x%x)\n", IOEX_get_error());
         return -1;
     }
 
     carrier_context.carrier = w;
-    rc = ela_run(w, 10);
+    rc = IOEX_run(w, 10);
     carrier_context.carrier = NULL;
     if (rc != 0) {
-        robot_log_error("Carrier run error (0x%x)\n", ela_get_error());
-        ela_kill(w);
+        robot_log_error("Carrier run error (0x%x)\n", IOEX_get_error());
+        IOEX_kill(w);
         return -1;
     }
 

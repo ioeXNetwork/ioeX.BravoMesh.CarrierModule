@@ -19,6 +19,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+ 
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,16 +68,15 @@
 #include <pthread.h>
 #endif
 
-#include <ela_carrier.h>
-#include <ela_session.h>
-
+#include <IOEX_carrier.h>
+#include <IOEX_session.h>
 #include "config.h"
 
 #define NUMBER_OF_HISTORY       256
 
 static char default_data_location[PATH_MAX];
 
-static const char *history_filename = ".elashell.history";
+static const char *history_filename = ".IOEXshell.history";
 
 static char *cmd_history[NUMBER_OF_HISTORY];
 static int cmd_history_last = 0;
@@ -76,7 +97,7 @@ static int OUTPUT_COLS;
 static int OUTPUT_LINES = 4;
 
 static struct {
-    ElaSession *ws;
+    IOEXSession *ws;
     int unchanged_streams;
     char remote_sdp[2048];
     size_t sdp_len;
@@ -403,7 +424,7 @@ static void output(const char *format, ...)
     va_end(args);
 }
 
-static void clear_screen(ElaCarrier *w, int argc, char *argv[])
+static void clear_screen(IOEXCarrier *w, int argc, char *argv[])
 {
     if (argc == 1) {
         pthread_mutex_lock(&screen_lock);
@@ -435,43 +456,43 @@ static void clear_screen(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void get_address(ElaCarrier *w, int argc, char *argv[])
+static void get_address(IOEXCarrier *w, int argc, char *argv[])
 {
     if (argc != 1) {
         output("Invalid command syntax.\n");
         return;
     }
 
-    char addr[ELA_MAX_ADDRESS_LEN+1] = {0};
-    ela_get_address(w, addr, sizeof(addr));
+    char addr[IOEX_MAX_ADDRESS_LEN+1] = {0};
+    IOEX_get_address(w, addr, sizeof(addr));
     output("Address: %s\n", addr);
 }
 
-static void get_nodeid(ElaCarrier *w, int argc, char *argv[])
+static void get_nodeid(IOEXCarrier *w, int argc, char *argv[])
 {
     if (argc != 1) {
         output("Invalid command syntax.\n");
         return;
     }
 
-    char id[ELA_MAX_ID_LEN+1] = {0};
-    ela_get_nodeid(w, id, sizeof(id));
+    char id[IOEX_MAX_ID_LEN+1] = {0};
+    IOEX_get_nodeid(w, id, sizeof(id));
     output("Node ID: %s\n", id);
 }
 
-static void get_userid(ElaCarrier *w, int argc, char *argv[])
+static void get_userid(IOEXCarrier *w, int argc, char *argv[])
 {
     if (argc != 1) {
         output("Invalid command syntax.\n");
         return;
     }
 
-    char id[ELA_MAX_ID_LEN+1] = {0};
-    ela_get_userid(w, id, sizeof(id));
+    char id[IOEX_MAX_ID_LEN+1] = {0};
+    IOEX_get_userid(w, id, sizeof(id));
     output("User ID: %s\n", id);
 }
 
-static void display_user_info(const ElaUserInfo *info)
+static void display_user_info(const IOEXUserInfo *info)
 {
     output("           ID: %s\n", info->userid);
     output("         Name: %s\n", info->name);
@@ -482,14 +503,14 @@ static void display_user_info(const ElaUserInfo *info)
     output("       Region: %s\n", info->region);
 }
 
-static void self_info(ElaCarrier *w, int argc, char *argv[])
+static void self_info(IOEXCarrier *w, int argc, char *argv[])
 {
-    ElaUserInfo info;
+    IOEXUserInfo info;
     int rc;
 
-    rc = ela_get_self_info(w, &info);
+    rc = IOEX_get_self_info(w, &info);
     if (rc != 0) {
-        output("Get self information failed(0x%x).\n", ela_get_error());
+        output("Get self information failed(0x%x).\n", IOEX_get_error());
         return;
     }
 
@@ -529,18 +550,18 @@ static void self_info(ElaCarrier *w, int argc, char *argv[])
             return;
         }
 
-        ela_set_self_info(w, &info);
+        IOEX_set_self_info(w, &info);
     } else {
         output("Invalid command syntax.\n");
     }
 }
 
-static void self_nospam(ElaCarrier *w, int argc, char *argv[])
+static void self_nospam(IOEXCarrier *w, int argc, char *argv[])
 {
     uint32_t nospam;
     
     if (argc == 1) {
-        ela_get_self_nospam(w, &nospam);
+        IOEX_get_self_nospam(w, &nospam);
         output("Self nospam: %lu.\n", nospam);
         return;
     } else if (argc == 2) {
@@ -550,7 +571,7 @@ static void self_nospam(ElaCarrier *w, int argc, char *argv[])
             return;
         }
 
-        ela_set_self_nospam(w, nospam);
+        IOEX_set_self_nospam(w, nospam);
         output("User's nospam changed to be %lu.\n", nospam);
     } else {
         output("Invalid command syntax.\n");
@@ -563,30 +584,30 @@ const char *presence_name[] = {
     "busy",    // Busy;
 };
 
-static void self_presence(ElaCarrier *w, int argc, char *argv[])
+static void self_presence(IOEXCarrier *w, int argc, char *argv[])
 {
-    ElaPresenceStatus presence;
+    IOEXPresenceStatus presence;
     int rc;
 
     if (argc == 1) {
-        ela_get_self_presence(w, &presence);
+        IOEX_get_self_presence(w, &presence);
         output("Self presence: %s\n", presence_name[presence]);
         return;
     } else if (argc == 2) {
         if (strcmp(argv[1], "none") == 0)
-            presence = ElaPresenceStatus_None;
+            presence = IOEXPresenceStatus_None;
         else if (strcmp(argv[1], "away") == 0)
-            presence = ElaPresenceStatus_Away;
+            presence = IOEXPresenceStatus_Away;
         else if (strcmp(argv[1], "busy") == 0)
-            presence = ElaPresenceStatus_Busy;
+            presence = IOEXPresenceStatus_Busy;
         else {
             output("Invalid command syntax.\n");
             return;
         }
 
-        rc = ela_set_self_presence(w, presence);
+        rc = IOEX_set_self_presence(w, presence);
         if (rc < 0)
-            output("Set user's presence failed (0x%x)\n", ela_get_error());
+            output("Set user's presence failed (0x%x)\n", IOEX_get_error());
         else
             output("User's presence changed to be %s.\n", argv[1]);
     } else {
@@ -594,7 +615,7 @@ static void self_presence(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void friend_add(ElaCarrier *w, int argc, char *argv[])
+static void friend_add(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -603,15 +624,15 @@ static void friend_add(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_add_friend(w, argv[1], argv[2]);
+    rc = IOEX_add_friend(w, argv[1], argv[2]);
     if (rc == 0)
         output("Request to add a new friend succeess.\n");
     else
         output("Request to add a new friend failed(0x%x).\n",
-                ela_get_error());
+                IOEX_get_error());
 }
 
-static void friend_accept(ElaCarrier *w, int argc, char *argv[])
+static void friend_accept(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -620,14 +641,14 @@ static void friend_accept(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_accept_friend(w, argv[1]);
+    rc = IOEX_accept_friend(w, argv[1]);
     if (rc == 0)
         output("Accept friend request success.\n");
     else
-        output("Accept friend request failed(0x%x).\n", ela_get_error());
+        output("Accept friend request failed(0x%x).\n", IOEX_get_error());
 }
 
-static void friend_remove(ElaCarrier *w, int argc, char *argv[])
+static void friend_remove(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -636,11 +657,11 @@ static void friend_remove(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_remove_friend(w, argv[1]);
+    rc = IOEX_remove_friend(w, argv[1]);
     if (rc == 0)
         output("Remove friend %s success.\n", argv[1]);
     else
-        output("Remove friend %s failed (0x%x).\n", argv[1], ela_get_error());
+        output("Remove friend %s failed (0x%x).\n", argv[1], IOEX_get_error());
 }
 
 static int first_friends_item = 1;
@@ -652,7 +673,7 @@ static const char *connection_name[] = {
 
 /* This callback share by list_friends and global
  * friend list callback */
-static bool friends_list_callback(ElaCarrier *w, const ElaFriendInfo *friend_info,
+static bool friends_list_callback(IOEXCarrier *w, const IOEXFriendInfo *friend_info,
                                  void *context)
 {
     static int count;
@@ -682,7 +703,7 @@ static bool friends_list_callback(ElaCarrier *w, const ElaFriendInfo *friend_inf
 
 /* This callback share by list_friends and global
  * friend list callback */
-static bool get_friends_callback(const ElaFriendInfo *friend_info, void *context)
+static bool get_friends_callback(const IOEXFriendInfo *friend_info, void *context)
 {
     static int count;
 
@@ -709,17 +730,17 @@ static bool get_friends_callback(const ElaFriendInfo *friend_info, void *context
     return true;
 }
 
-static void list_friends(ElaCarrier *w, int argc, char *argv[])
+static void list_friends(IOEXCarrier *w, int argc, char *argv[])
 {
     if (argc != 1) {
         output("Invalid command syntax.\n");
         return;
     }
 
-    ela_get_friends(w, get_friends_callback, NULL);
+    IOEX_get_friends(w, get_friends_callback, NULL);
 }
 
-static void display_friend_info(const ElaFriendInfo *fi)
+static void display_friend_info(const IOEXFriendInfo *fi)
 {
     output("           ID: %s\n", fi->user_info.userid);
     output("         Name: %s\n", fi->user_info.name);
@@ -733,19 +754,19 @@ static void display_friend_info(const ElaFriendInfo *fi)
     output("   Connection: %s\n", connection_name[fi->status]);
 }
 
-static void show_friend(ElaCarrier *w, int argc, char *argv[])
+static void show_friend(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
-    ElaFriendInfo fi;
+    IOEXFriendInfo fi;
 
     if (argc != 2) {
         output("Invalid command syntax.\n");
         return;
     }
 
-    rc = ela_get_friend_info(w, argv[1], &fi);
+    rc = IOEX_get_friend_info(w, argv[1], &fi);
     if (rc < 0) {
-        output("Get friend information failed(0x%x).\n", ela_get_error());
+        output("Get friend information failed(0x%x).\n", IOEX_get_error());
         return;
     }
 
@@ -753,7 +774,7 @@ static void show_friend(ElaCarrier *w, int argc, char *argv[])
     display_friend_info(&fi);
 }
 
-static void label_friend(ElaCarrier *w, int argc, char *argv[])
+static void label_friend(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -762,27 +783,27 @@ static void label_friend(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_set_friend_label(w, argv[1], argv[2]);
+    rc = IOEX_set_friend_label(w, argv[1], argv[2]);
     if (rc == 0)
         output("Update friend label success.\n");
     else
-        output("Update friend label failed(0x%x).\n", ela_get_error());
+        output("Update friend label failed(0x%x).\n", IOEX_get_error());
 }
 
-static void friend_added_callback(ElaCarrier *w, const ElaFriendInfo *info,
+static void friend_added_callback(IOEXCarrier *w, const IOEXFriendInfo *info,
                                   void *context)
 {
     output("New friend added. The friend information:\n");
     display_friend_info(info);
 }
 
-static void friend_removed_callback(ElaCarrier *w, const char *friendid,
+static void friend_removed_callback(IOEXCarrier *w, const char *friendid,
                                     void *context)
 {
     output("Friend %s removed!\n", friendid);
 }
 
-static void send_message(ElaCarrier *w, int argc, char *argv[])
+static void send_message(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -791,14 +812,14 @@ static void send_message(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_send_friend_message(w, argv[1], argv[2], strlen(argv[2]) + 1);
+    rc = IOEX_send_friend_message(w, argv[1], argv[2], strlen(argv[2]) + 1);
     if (rc == 0)
         output("Send message success.\n");
     else
-        output("Send message failed(0x%x).\n", ela_get_error());
+        output("Send message failed(0x%x).\n", IOEX_get_error());
 }
 
-static void invite_response_callback(ElaCarrier *w, const char *friendid,
+static void invite_response_callback(IOEXCarrier *w, const char *friendid,
                                      int status, const char *reason,
                                      const void *data, size_t len, void *context)
 {
@@ -810,7 +831,7 @@ static void invite_response_callback(ElaCarrier *w, const char *friendid,
     }
 }
 
-static void invite(ElaCarrier *w, int argc, char *argv[])
+static void invite(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -819,15 +840,15 @@ static void invite(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_invite_friend(w, argv[1], argv[2], strlen(argv[2]),
+    rc = IOEX_invite_friend(w, argv[1], argv[2], strlen(argv[2]),
                                invite_response_callback, NULL);
     if (rc == 0)
         output("Send invite request success.\n");
     else
-        output("Send invite request failed(0x%x).\n", ela_get_error());
+        output("Send invite request failed(0x%x).\n", IOEX_get_error());
 }
 
-static void reply_invite(ElaCarrier *w, int argc, char *argv[])
+static void reply_invite(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
     int status = 0;
@@ -851,19 +872,19 @@ static void reply_invite(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_reply_friend_invite(w, argv[1], status, reason, msg, msg_len);
+    rc = IOEX_reply_friend_invite(w, argv[1], status, reason, msg, msg_len);
     if (rc == 0)
         output("Send invite reply to inviter success.\n");
     else
-        output("Send invite reply to inviter failed(0x%x).\n", ela_get_error());
+        output("Send invite reply to inviter failed(0x%x).\n", IOEX_get_error());
 }
 
-static void kill_carrier(ElaCarrier *w, int argc, char *argv[])
+static void kill_carrier(IOEXCarrier *w, int argc, char *argv[])
 {
-    ela_kill(w);
+    IOEX_kill(w);
 }
 
-static void session_request_callback(ElaCarrier *w, const char *from,
+static void session_request_callback(IOEXCarrier *w, const char *from,
             const char *sdp, size_t len, void *context)
 {
     strncpy(session_ctx.remote_sdp, sdp, len);
@@ -879,7 +900,7 @@ static void session_request_callback(ElaCarrier *w, const char *from,
     output("  3. sreply ok\n");
 }
 
-static void session_request_complete_callback(ElaSession *ws, int status,
+static void session_request_complete_callback(IOEXSession *ws, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     int rc;
@@ -894,13 +915,13 @@ static void session_request_complete_callback(ElaSession *ws, int status,
     session_ctx.remote_sdp[len] = 0;
     session_ctx.sdp_len = len;
 
-    rc = ela_session_start(session_ctx.ws, session_ctx.remote_sdp,
+    rc = IOEX_session_start(session_ctx.ws, session_ctx.remote_sdp,
                                session_ctx.sdp_len);
 
     output("Session start %s.\n", rc == 0 ? "success" : "failed");
 }
 
-static void stream_bulk_receive(ElaCarrier *w, int argc, char *argv[])
+static void stream_bulk_receive(IOEXCarrier *w, int argc, char *argv[])
 {
     if (argc != 2) {
         output("Invalid command syntax.\n");
@@ -935,7 +956,7 @@ static void stream_bulk_receive(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void stream_on_data(ElaSession *ws, int stream, const void *data,
+static void stream_on_data(IOEXSession *ws, int stream, const void *data,
                            size_t len, void *context)
 {
     if (session_ctx.bulk_mode) {
@@ -954,8 +975,8 @@ static void stream_on_data(ElaSession *ws, int stream, const void *data,
     }
 }
 
-static void stream_on_state_changed(ElaSession *ws, int stream,
-        ElaStreamState state, void *context)
+static void stream_on_state_changed(IOEXSession *ws, int stream,
+        IOEXStreamState state, void *context)
 {
     const char *state_name[] = {
         "raw",
@@ -970,46 +991,46 @@ static void stream_on_state_changed(ElaSession *ws, int stream,
 
     output("Stream [%d] state changed to: %s\n", stream, state_name[state]);
 
-    if (state == ElaStreamState_transport_ready)
+    if (state == IOEXStreamState_transport_ready)
         --session_ctx.unchanged_streams;
 }
 
-bool on_channel_open(ElaSession *ws, int stream, int channel,
+bool on_channel_open(IOEXSession *ws, int stream, int channel,
                      const char *cookie, void *context)
 {
     output("Stream request open new channel %d.\n", channel);
     return true;
 }
 
-void on_channel_opened(ElaSession *ws, int stream, int channel, void *context)
+void on_channel_opened(IOEXSession *ws, int stream, int channel, void *context)
 {
     output("Channel %d:%d opened.\n", stream, channel);
 }
 
-void on_channel_close(ElaSession *ws, int stream, int channel,
+void on_channel_close(IOEXSession *ws, int stream, int channel,
                       CloseReason reason, void *context)
 {
     output("Channel %d:%d closed.\n", stream, channel);
 }
 
-bool on_channel_data(ElaSession *ws, int stream, int channel,
+bool on_channel_data(IOEXSession *ws, int stream, int channel,
                      const void *data, size_t len, void *context)
 {
     output("Channel %d:%d received data [%s]\n", stream, channel, data);
     return true;
 }
 
-void on_channel_pending(ElaSession *ws, int stream, int channel, void *context)
+void on_channel_pending(IOEXSession *ws, int stream, int channel, void *context)
 {
     output("Channel %d:%d is pending.\n", stream, channel);
 }
 
-void on_channel_resume(ElaSession *ws, int stream, int channel, void *context)
+void on_channel_resume(IOEXSession *ws, int stream, int channel, void *context)
 {
     output("Channel %d:%d resumed.\n", stream, channel);
 }
 
-static void session_init(ElaCarrier *w, int argc, char *argv[])
+static void session_init(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -1018,7 +1039,7 @@ static void session_init(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_session_init(w, session_request_callback, NULL);
+    rc = IOEX_session_init(w, session_request_callback, NULL);
     if (rc < 0) {
         output("Session initialized failed.\n");
     }
@@ -1027,25 +1048,25 @@ static void session_init(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void session_cleanup(ElaCarrier *w, int argc, char *argv[])
+static void session_cleanup(IOEXCarrier *w, int argc, char *argv[])
 {
     if (argc != 1) {
         output("Invalid command syntax.\n");
         return;
     }
 
-    ela_session_cleanup(w);
+    IOEX_session_cleanup(w);
     output("Session cleaned up.\n");
 }
 
-static void session_new(ElaCarrier *w, int argc, char *argv[])
+static void session_new(IOEXCarrier *w, int argc, char *argv[])
 {
     if (argc != 2) {
         output("Invalid command syntax.\n");
         return;
     }
 
-    session_ctx.ws = ela_session_new(w, argv[1]);
+    session_ctx.ws = IOEX_session_new(w, argv[1]);
     if (!session_ctx.ws) {
         output("Create session failed.\n");
     } else {
@@ -1054,7 +1075,7 @@ static void session_new(ElaCarrier *w, int argc, char *argv[])
     session_ctx.unchanged_streams = 0;
 }
 
-static void session_close(ElaCarrier *w, int argc, char *argv[])
+static void session_close(IOEXCarrier *w, int argc, char *argv[])
 {
     if (argc != 1) {
         output("Invalid command syntax.\n");
@@ -1062,7 +1083,7 @@ static void session_close(ElaCarrier *w, int argc, char *argv[])
     }
 
     if (session_ctx.ws) {
-        ela_session_close(session_ctx.ws);
+        IOEX_session_close(session_ctx.ws);
         session_ctx.ws = NULL;
         session_ctx.remote_sdp[0] = 0;
         session_ctx.sdp_len = 0;
@@ -1072,12 +1093,12 @@ static void session_close(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void stream_add(ElaCarrier *w, int argc, char *argv[])
+static void stream_add(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
     int options = 0;
 
-    ElaStreamCallbacks callbacks;
+    IOEXStreamCallbacks callbacks;
 
     memset(&callbacks, 0, sizeof(callbacks));
     callbacks.state_changed = stream_on_state_changed;
@@ -1091,13 +1112,13 @@ static void stream_add(ElaCarrier *w, int argc, char *argv[])
 
         for (i = 1; i < argc; i++) {
             if (strcmp(argv[i], "reliable") == 0) {
-                options |= ELA_STREAM_RELIABLE;
+                options |= IOEX_STREAM_RELIABLE;
             } else if (strcmp(argv[i], "plain") == 0) {
-                options |= ELA_STREAM_PLAIN;
+                options |= IOEX_STREAM_PLAIN;
             } else if (strcmp(argv[i], "multiplexing") == 0) {
-                options |= ELA_STREAM_MULTIPLEXING;
+                options |= IOEX_STREAM_MULTIPLEXING;
             } else if (strcmp(argv[i], "portforwarding") == 0) {
-                options |= ELA_STREAM_PORT_FORWARDING;
+                options |= IOEX_STREAM_PORT_FORWARDING;
             } else {
                 output("Invalid command syntax.\n");
                 return;
@@ -1105,7 +1126,7 @@ static void stream_add(ElaCarrier *w, int argc, char *argv[])
         }
     }
 
-    if ((options & ELA_STREAM_MULTIPLEXING) || (options & ELA_STREAM_PORT_FORWARDING)) {
+    if ((options & IOEX_STREAM_MULTIPLEXING) || (options & IOEX_STREAM_PORT_FORWARDING)) {
         callbacks.channel_open = on_channel_open;
         callbacks.channel_opened = on_channel_opened;
         callbacks.channel_data = on_channel_data;
@@ -1114,7 +1135,7 @@ static void stream_add(ElaCarrier *w, int argc, char *argv[])
         callbacks.channel_close = on_channel_close;
     }
 
-    rc = ela_session_add_stream(session_ctx.ws, ElaStreamType_text,
+    rc = IOEX_session_add_stream(session_ctx.ws, IOEXStreamType_text,
                                 options, &callbacks, NULL);
     if (rc < 0) {
         output("Add stream failed.\n");
@@ -1125,7 +1146,7 @@ static void stream_add(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void stream_remove(ElaCarrier *w, int argc, char *argv[])
+static void stream_remove(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
     int stream;
@@ -1136,7 +1157,7 @@ static void stream_remove(ElaCarrier *w, int argc, char *argv[])
     }
 
     stream = atoi(argv[1]);
-    rc = ela_session_remove_stream(session_ctx.ws, stream);
+    rc = IOEX_session_remove_stream(session_ctx.ws, stream);
     if (rc < 0) {
         output("Remove stream %d failed.\n", stream);
     }
@@ -1145,7 +1166,7 @@ static void stream_remove(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void session_request(ElaCarrier *w, int argc, char *argv[])
+static void session_request(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -1154,7 +1175,7 @@ static void session_request(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_session_request(session_ctx.ws,
+    rc = IOEX_session_request(session_ctx.ws,
                              session_request_complete_callback, NULL);
     if (rc < 0) {
         output("session request failed.\n");
@@ -1164,7 +1185,7 @@ static void session_request(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
+static void session_reply_request(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -1174,7 +1195,7 @@ static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
     }
 
     if ((strcmp(argv[1], "ok") == 0) && (argc == 2)) {
-        rc = ela_session_reply_request(session_ctx.ws, 0, NULL);
+        rc = IOEX_session_reply_request(session_ctx.ws, 0, NULL);
         if (rc < 0) {
             output("response invite failed.\n");
         }
@@ -1184,14 +1205,14 @@ static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
             while (session_ctx.unchanged_streams > 0)
                 usleep(200);
 
-            rc = ela_session_start(session_ctx.ws, session_ctx.remote_sdp,
+            rc = IOEX_session_start(session_ctx.ws, session_ctx.remote_sdp,
                                        session_ctx.sdp_len);
 
             output("Session start %s.\n", rc == 0 ? "success" : "failed");
         }
     }
     else if ((strcmp(argv[1], "refuse") == 0) && (argc == 3)) {
-        rc = ela_session_reply_request(session_ctx.ws, 1, argv[2]);
+        rc = IOEX_session_reply_request(session_ctx.ws, 1, argv[2]);
         if (rc < 0) {
             output("response invite failed.\n");
         }
@@ -1205,7 +1226,7 @@ static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void stream_write(ElaCarrier *w, int argc, char *argv[])
+static void stream_write(IOEXCarrier *w, int argc, char *argv[])
 {
     ssize_t rc;
 
@@ -1214,7 +1235,7 @@ static void stream_write(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_stream_write(session_ctx.ws, atoi(argv[1]),
+    rc = IOEX_stream_write(session_ctx.ws, atoi(argv[1]),
                               argv[2], strlen(argv[2]) + 1);
     if (rc < 0) {
         output("write data failed.\n");
@@ -1252,13 +1273,13 @@ static void *bulk_write_thread(void *arg)
         size_t sent = 0;
 
         do {
-            rc = ela_stream_write(session_ctx.ws, args->stream,
+            rc = IOEX_stream_write(session_ctx.ws, args->stream,
                                       packet + sent, total - sent);
             if (rc == 0) {
                 usleep(100);
                 continue;
             } else if (rc < 0) {
-                if (ela_get_error() == ELA_GENERAL_ERROR(ELAERR_BUSY)) {
+                if (IOEX_get_error() == IOEX_GENERAL_ERROR(IOEXERR_BUSY)) {
                     usleep(100);
                     continue;
                 } else {
@@ -1287,7 +1308,7 @@ static void *bulk_write_thread(void *arg)
     return NULL;
 }
 
-static void stream_bulk_write(ElaCarrier *w, int argc, char *argv[])
+static void stream_bulk_write(IOEXCarrier *w, int argc, char *argv[])
 {
     pthread_attr_t attr;
     pthread_t th;
@@ -1312,10 +1333,10 @@ static void stream_bulk_write(ElaCarrier *w, int argc, char *argv[])
     pthread_attr_destroy(&attr);
 }
 
-static void stream_get_info(ElaCarrier *w, int argc, char *argv[])
+static void stream_get_info(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
-    ElaTransportInfo info;
+    IOEXTransportInfo info;
 
     const char *topology_name[] = {
         "LAN",
@@ -1335,7 +1356,7 @@ static void stream_get_info(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_stream_get_transport_info(session_ctx.ws, atoi(argv[1]), &info);
+    rc = IOEX_stream_get_transport_info(session_ctx.ws, atoi(argv[1]), &info);
     if (rc < 0) {
         output("get remote addr failed.\n");
         return;
@@ -1357,7 +1378,7 @@ static void stream_get_info(ElaCarrier *w, int argc, char *argv[])
         output("\n");
 }
 
-static void stream_add_channel(ElaCarrier *w, int argc, char *argv[])
+static void stream_add_channel(IOEXCarrier *w, int argc, char *argv[])
 {
     int ch;
 
@@ -1366,7 +1387,7 @@ static void stream_add_channel(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    ch = ela_stream_open_channel(session_ctx.ws, atoi(argv[1]), NULL);
+    ch = IOEX_stream_open_channel(session_ctx.ws, atoi(argv[1]), NULL);
     if (ch <= 0) {
         output("Create channel failed.\n");
     } else {
@@ -1374,7 +1395,7 @@ static void stream_add_channel(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void stream_close_channel(ElaCarrier *w, int argc, char *argv[])
+static void stream_close_channel(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -1383,7 +1404,7 @@ static void stream_close_channel(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_stream_close_channel(session_ctx.ws, atoi(argv[1]), atoi(argv[2]));
+    rc = IOEX_stream_close_channel(session_ctx.ws, atoi(argv[1]), atoi(argv[2]));
     if (rc < 0) {
         output("Close channel failed.\n");
     } else {
@@ -1391,7 +1412,7 @@ static void stream_close_channel(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void stream_write_channel(ElaCarrier *w, int argc, char *argv[])
+static void stream_write_channel(IOEXCarrier *w, int argc, char *argv[])
 {
     ssize_t rc;
 
@@ -1400,7 +1421,7 @@ static void stream_write_channel(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_stream_write_channel(session_ctx.ws, atoi(argv[1]),
+    rc = IOEX_stream_write_channel(session_ctx.ws, atoi(argv[1]),
             atoi(argv[2]), argv[3], strlen(argv[3])+1);
     if (rc < 0) {
         output("Write channel failed.\n");
@@ -1409,7 +1430,7 @@ static void stream_write_channel(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void stream_pend_channel(ElaCarrier *w, int argc, char *argv[])
+static void stream_pend_channel(IOEXCarrier *w, int argc, char *argv[])
 {
     ssize_t rc;
 
@@ -1418,7 +1439,7 @@ static void stream_pend_channel(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_stream_pend_channel(session_ctx.ws, atoi(argv[1]),
+    rc = IOEX_stream_pend_channel(session_ctx.ws, atoi(argv[1]),
                                      atoi(argv[2]));
     if (rc < 0) {
         output("Pend channel(input) failed.\n");
@@ -1427,7 +1448,7 @@ static void stream_pend_channel(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void stream_resume_channel(ElaCarrier *w, int argc, char *argv[])
+static void stream_resume_channel(IOEXCarrier *w, int argc, char *argv[])
 {
     ssize_t rc;
 
@@ -1436,7 +1457,7 @@ static void stream_resume_channel(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_stream_resume_channel(session_ctx.ws, atoi(argv[1]),
+    rc = IOEX_stream_resume_channel(session_ctx.ws, atoi(argv[1]),
                                        atoi(argv[2]));
 
     if (rc < 0) {
@@ -1446,7 +1467,7 @@ static void stream_resume_channel(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void session_add_service(ElaCarrier *w, int argc, char *argv[])
+static void session_add_service(IOEXCarrier *w, int argc, char *argv[])
 {
     PortForwardingProtocol protocol;
     int rc;
@@ -1463,23 +1484,23 @@ static void session_add_service(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_session_add_service(session_ctx.ws, argv[1],
+    rc = IOEX_session_add_service(session_ctx.ws, argv[1],
                                      protocol, argv[3], argv[4]);
     output("Add service %s %s.\n", argv[1], rc == 0 ? "success" : "failed");
 }
 
-static void session_remove_service(ElaCarrier *w, int argc, char *argv[])
+static void session_remove_service(IOEXCarrier *w, int argc, char *argv[])
 {
     if (argc != 2) {
         output("Invalid command syntax.\n");
         return;
     }
 
-    ela_session_remove_service(session_ctx.ws, argv[1]);
+    IOEX_session_remove_service(session_ctx.ws, argv[1]);
     output("Service %s removed.", argv[1]);
 }
 
-static void portforwarding_open(ElaCarrier *w, int argc, char *argv[])
+static void portforwarding_open(IOEXCarrier *w, int argc, char *argv[])
 {
     PortForwardingProtocol protocol;
     int pfid;
@@ -1496,7 +1517,7 @@ static void portforwarding_open(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    pfid = ela_stream_open_port_forwarding(session_ctx.ws, atoi(argv[1]),
+    pfid = IOEX_stream_open_port_forwarding(session_ctx.ws, atoi(argv[1]),
                                 argv[2], protocol, argv[4], argv[5]);
 
     if (pfid > 0) {
@@ -1508,7 +1529,7 @@ static void portforwarding_open(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void portforwarding_close(ElaCarrier *w, int argc, char *argv[])
+static void portforwarding_close(IOEXCarrier *w, int argc, char *argv[])
 {
     int pfid;
 
@@ -1523,15 +1544,162 @@ static void portforwarding_close(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    pfid = ela_stream_close_port_forwarding(session_ctx.ws, atoi(argv[1]), pfid);
+    pfid = IOEX_stream_close_port_forwarding(session_ctx.ws, atoi(argv[1]), pfid);
     output("Portforwarding %d closed.\n", pfid);
 }
 
-static void help(ElaCarrier *w, int argc, char *argv[]);
+static void help(IOEXCarrier *w, int argc, char *argv[]);
+
+static bool get_files_callback(int direction, const IOEXFileInfo *fi, void *context)
+{
+    static int count = 0;
+    if(fi != NULL){
+        if (direction == 0) {
+            count++;
+            output("Send: [%u]%s to friend: %u\n", fi->file_index, fi->file_name, fi->friend_number);
+        }
+        else{
+            count++;
+            output("Receive: [%u]%s from friend: %u\n", fi->file_index, fi->file_name, fi->friend_number);
+        }
+    }
+    else{
+        output("Total %d file(s) in queue.\n", count);
+        count = 0;
+    }
+
+    return true;
+}
+
+static void list_files(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 1){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_get_files(w, get_files_callback, NULL);
+    if(rc < 0){
+        output("Cannot get files.\n");
+    }
+}
+
+static void file_send_request(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 3){
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = IOEX_send_file_request(w, argv[1], argv[2]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("File request sent.\n");
+    }
+}
+
+static void file_send_seek(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 4){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_send_file_seek(w, argv[1], argv[2], argv[3]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("Sent file seek request.\n");
+    }
+}
+
+static void file_send_accept(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 5){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_send_file_accept(w, argv[1], argv[2], argv[3], argv[4]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("Accepted file request.\n");
+    }
+}
+
+static void file_send_reject(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 3){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_send_file_reject(w, argv[1], argv[2]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("Rejected file request.\n");
+    }
+}
+
+static void file_send_pause(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 3){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_send_file_pause(w, argv[1], argv[2]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("Paused file transmission.\n");
+    }
+}
+
+static void file_send_resume(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 3){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_send_file_resume(w, argv[1], argv[2]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("Resumed file transmission.\n");
+    }
+}
+
+static void file_send_cancel(IOEXCarrier *w, int argc, char *argv[])
+{
+    int rc;
+    if(argc != 3){
+        output("Invalid command syntax.\n");
+        return;
+    }
+    rc = IOEX_send_file_cancel(w, argv[1], argv[2]);
+    if(rc < 0){
+        output("Invalid request.(0x%8X)\n", IOEX_get_error());
+    }
+    else{
+        output("Canceled file transmission.\n");
+    }
+}
 
 struct command {
     const char *cmd;
-    void (*function)(ElaCarrier *w, int argc, char *argv[]);
+    void (*function)(IOEXCarrier *w, int argc, char *argv[]);
     const char *help;
 } commands[] = {
     { "help",       help,                   "help [cmd]" },
@@ -1575,11 +1743,20 @@ struct command {
     { "spfopen",    portforwarding_open,    "spfopen stream service tcp|udp host port" },
     { "spfclose",   portforwarding_close,   "spfclose stream pfid" },
     { "scleanup",   session_cleanup,        "scleanup" },
+
+    { "filesend",   file_send_request, 	    "filesend userid filename" },
+    { "fileseek",   file_send_seek, 	    "fileseek userid fileindex position" },
+    { "fileaccept", file_send_accept, 	    "fileaccept userid fileindex newfilename filepath" },
+    { "filereject", file_send_reject, 	    "filereject userid fileindex" },
+    { "filepause",  file_send_pause, 	    "filepause userid fileindex" },
+    { "fileresume", file_send_resume, 	    "fileresume userid fileindex" },
+    { "filecancel", file_send_cancel, 	    "filecancel userid fileindex" },
+    { "files",      list_files,      	    "files" },
     { "kill",       kill_carrier,           "kill" },
     { NULL }
 };
 
-static void help(ElaCarrier *w, int argc, char *argv[])
+static void help(IOEXCarrier *w, int argc, char *argv[])
 {
     char line[256] = "\x0";
     size_t len = 0;
@@ -1617,7 +1794,7 @@ static void help(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void do_cmd(ElaCarrier *w, char *line)
+static void do_cmd(IOEXCarrier *w, char *line)
 {
     char *args[512];
     int count = 0;
@@ -1749,7 +1926,7 @@ static char *read_cmd(void)
     return NULL;
 }
 
-static void idle_callback(ElaCarrier *w, void *context)
+static void idle_callback(IOEXCarrier *w, void *context)
 {
     char *cmd = read_cmd();
 
@@ -1757,15 +1934,15 @@ static void idle_callback(ElaCarrier *w, void *context)
         do_cmd(w, cmd);
 }
 
-static void connection_callback(ElaCarrier *w, ElaConnectionStatus status,
+static void connection_callback(IOEXCarrier *w, IOEXConnectionStatus status,
                                 void *context)
 {
     switch (status) {
-    case ElaConnectionStatus_Connected:
+    case IOEXConnectionStatus_Connected:
         output("Connected to carrier network.\n");
         break;
 
-    case ElaConnectionStatus_Disconnected:
+    case IOEXConnectionStatus_Disconnected:
         output("Disconnect from carrier network.\n");
         break;
 
@@ -1774,22 +1951,22 @@ static void connection_callback(ElaCarrier *w, ElaConnectionStatus status,
     }
 }
 
-static void friend_info_callback(ElaCarrier *w, const char *friendid,
-                                 const ElaFriendInfo *info, void *context)
+static void friend_info_callback(IOEXCarrier *w, const char *friendid,
+                                 const IOEXFriendInfo *info, void *context)
 {
     output("Friend information changed:\n");
     display_friend_info(info);
 }
 
-static void friend_connection_callback(ElaCarrier *w, const char *friendid,
-                                       ElaConnectionStatus status, void *context)
+static void friend_connection_callback(IOEXCarrier *w, const char *friendid,
+                                       IOEXConnectionStatus status, void *context)
 {
     switch (status) {
-    case ElaConnectionStatus_Connected:
+    case IOEXConnectionStatus_Connected:
         output("Friend[%s] connection changed to be online\n", friendid);
         break;
 
-    case ElaConnectionStatus_Disconnected:
+    case IOEXConnectionStatus_Disconnected:
         output("Friend[%s] connection changed to be offline.\n", friendid);
         break;
 
@@ -1798,20 +1975,20 @@ static void friend_connection_callback(ElaCarrier *w, const char *friendid,
     }
 }
 
-static void friend_presence_callback(ElaCarrier *w, const char *friendid,
-                                     ElaPresenceStatus status,
+static void friend_presence_callback(IOEXCarrier *w, const char *friendid,
+                                     IOEXPresenceStatus status,
                                      void *context)
 {
-    if (status >= ElaPresenceStatus_None &&
-        status <= ElaPresenceStatus_Busy) {
+    if (status >= IOEXPresenceStatus_None &&
+        status <= IOEXPresenceStatus_Busy) {
         output("Friend[%s] change presence to %s\n", friendid, presence_name[status]);
     } else {
         output("Error!!! Got unknown presence status %d.\n", status);
     }
 }
 
-static void friend_request_callback(ElaCarrier *w, const char *userid,
-                                    const ElaUserInfo *info, const char *hello,
+static void friend_request_callback(IOEXCarrier *w, const char *userid,
+                                    const IOEXUserInfo *info, const char *hello,
                                     void *context)
 {
     output("Friend request from user[%s] with HELLO: %s.\n",
@@ -1820,13 +1997,13 @@ static void friend_request_callback(ElaCarrier *w, const char *userid,
     output("  faccept %s\n", userid);
 }
 
-static void message_callback(ElaCarrier *w, const char *from,
+static void message_callback(IOEXCarrier *w, const char *from,
                              const void *msg, size_t len, void *context)
 {
     output("Message from friend[%s]: %.*s\n", from, (int)len, (const char *)msg);
 }
 
-static void invite_request_callback(ElaCarrier *w, const char *from,
+static void invite_request_callback(IOEXCarrier *w, const char *from,
                                     const void *data, size_t len, void *context)
 {
     output("Invite request from[%s] with data: %.*s\n", from, (int)len, (const char *)data);
@@ -1835,10 +2012,67 @@ static void invite_request_callback(ElaCarrier *w, const char *from,
     output("  ireply %s refuse [reason]\n", from);
 }
 
+static void file_request_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename, 
+                                  const uint64_t filesize, void *context)
+{
+    output("Send file request from friend[%s]\n", friendid);
+    output("File index %u name [%s] with size %u\n", fileindex, filename, filesize);
+    output("Reply use following commands:\n");
+    output("  fileaccept %s %u <new file name> <file path>\n", friendid, fileindex);
+    output("  filereject %s %u\n", friendid, fileindex);
+}
+
+static void file_accepted_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+{
+    output("Friend[%s] has accepted file request [index:%u]\n", friendid, fileindex);
+}
+
+static void file_rejected_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+{
+    output("Friend[%s] has rejected file request [index:%u]\n", friendid, fileindex);
+}
+
+static void file_paused_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+{
+    output("Friend[%s] has paused file transmission [index:%u]\n", friendid, fileindex);
+}
+
+static void file_resumed_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+{
+    output("Friend[%s] has resumed file transmission [index:%u]\n", friendid, fileindex);
+}
+
+static void file_canceled_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, void *context)
+{
+    output("Friend[%s] has canceled file transmission [index:%u]\n", friendid, fileindex);
+}
+
+static void file_chunk_send_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
+                                     const uint64_t position, const size_t length, void *context)
+{
+    output("Sent a file chunk of file[%s] index:%u to friend[%s]\n", filename, fileindex, friendid);
+    output("From position: %u and length: %u\n", position, length);
+}
+
+static void file_chunk_send_error_callback(IOEXCarrier *w, int errcode, const char *friendid, const uint32_t fileindex, const char *filename,
+                                     const uint64_t position, const size_t length, void *context)
+{
+    output("Failed to sent a file chunk of file[%s] index:%u to friend[%s]\n", filename, fileindex, friendid);
+    output("From position: %u and length: %u\n", position, length);
+    output("Error code: 0x%08x\n", errcode);
+}
+
+static void file_chunk_receive_callback(IOEXCarrier *w, const char *friendid, const uint32_t fileindex, const char *filename,
+                                        const uint64_t position, const size_t length, void *context)
+{
+    output("Friend[%s] sent a file chunk of file[%s] index:%u]\n", friendid, filename, fileindex);
+    output("From position: %u and length: %u\n", position, length);
+}
+
 static void usage(void)
 {
-    printf("Elastos shell, an interactive console client application.\n");
-    printf("Usage: elashell [OPTION]...\n");
+    printf("IOEX shell, an interactive console client application.\n");
+    printf("Usage: IOEXshell [OPTION]...\n");
     printf("\n");
     printf("First run options:\n");
     printf("  -c, --config=CONFIG_FILE  Set config file path.\n");
@@ -1871,11 +2105,11 @@ int main(int argc, char *argv[])
 {
     ShellConfig *cfg;
     char buffer[2048];
-    ElaCarrier *w;
-    ElaOptions opts;
+    IOEXCarrier *w;
+    IOEXOptions opts;
     int wait_for_attach = 0;
-    char buf[ELA_MAX_ADDRESS_LEN+1];
-    ElaCallbacks callbacks;
+    char buf[IOEX_MAX_ADDRESS_LEN+1];
+    IOEXCallbacks callbacks;
     int rc;
     int i;
 
@@ -1936,7 +2170,7 @@ int main(int argc, char *argv[])
     init_screen();
     history_load();
 
-    ela_log_init(cfg->loglevel, cfg->logfile, log_print);
+    IOEX_log_init(cfg->loglevel, cfg->logfile, log_print);
 
     opts.udp_enabled = cfg->udp_enabled;
     opts.persistent_location = cfg->datadir;
@@ -1971,12 +2205,22 @@ int main(int argc, char *argv[])
     callbacks.friend_message = message_callback;
     callbacks.friend_invite = invite_request_callback;
 
-    w = ela_new(&opts, &callbacks, NULL);
+    callbacks.file_request = file_request_callback;
+    callbacks.file_accepted = file_accepted_callback;
+    callbacks.file_rejected = file_rejected_callback;
+    callbacks.file_paused = file_paused_callback;
+    callbacks.file_resumed = file_resumed_callback;
+    callbacks.file_canceled = file_canceled_callback;
+    //callbacks.file_chunk_send = file_chunk_send_callback;
+    //callbacks.file_chunk_send_error = file_chunk_send_error_callback;
+    //callbacks.file_chunk_receive = file_chunk_receive_callback;
+
+    w = IOEX_new(&opts, &callbacks, NULL);
     deref(cfg);
     free(opts.bootstraps);
 
     if (!w) {
-        output("Error create carrier instance: 0x%x\n", ela_get_error());
+        output("Error create carrier instance: 0x%x\n", IOEX_get_error());
         output("Press any key to quit...");
         nodelay(stdscr, FALSE);
         getch();
@@ -1984,18 +2228,18 @@ int main(int argc, char *argv[])
     }
 
     output("Carrier node identities:\n");
-    output("   Node ID: %s\n", ela_get_nodeid(w, buf, sizeof(buf)));
-    output("   User ID: %s\n", ela_get_userid(w, buf, sizeof(buf)));
-    output("   Address: %s\n\n", ela_get_address(w, buf, sizeof(buf)));
+    output("   Node ID: %s\n", IOEX_get_nodeid(w, buf, sizeof(buf)));
+    output("   User ID: %s\n", IOEX_get_userid(w, buf, sizeof(buf)));
+    output("   Address: %s\n\n", IOEX_get_address(w, buf, sizeof(buf)));
     output("\n");
 
-    rc = ela_run(w, 10);
+    rc = IOEX_run(w, 10);
     if (rc != 0) {
-        output("Error start carrier loop: 0x%x\n", ela_get_error());
+        output("Error start carrier loop: 0x%x\n", IOEX_get_error());
         output("Press any key to quit...");
         nodelay(stdscr, FALSE);
         getch();
-        ela_kill(w);
+        IOEX_kill(w);
         goto quit;
     }
 

@@ -19,6 +19,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+/*
+ * Copyright (c) 2018 ioeXNetwork
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include <unistd.h>
 #include <errno.h>
@@ -34,7 +55,7 @@
 #include <rc_mem.h>
 #include <vlog.h>
 
-#include "ela_session.h"
+#include "IOEX_session.h"
 #include "session.h"
 #include "fdset.h"
 #include "socket.h"
@@ -49,7 +70,7 @@ bool tcp_portforwarding_channel_open(Channel *ch, const char *cookie,
                                      void *context)
 {
     MultiplexHandler *handler = (MultiplexHandler *)context;
-    ElaStream *s = handler->base.stream;
+    IOEXStream *s = handler->base.stream;
     Hashtable *services;
     Service *svc;
     SOCKET sock;
@@ -227,7 +248,7 @@ void handle_tcp_portforwarding_channel(TcpChannel *ch, void *context)
 
     buf = flex_buffer(FLEX_BUFFER_MAX_LEN, FLEX_PADDING_LEN);
     bytes = recv(ch->sock, flex_buffer_mutable_ptr(buf),
-                 ELA_MAX_USER_DATA_LEN, 0);
+                 IOEX_MAX_USER_DATA_LEN, 0);
     if (bytes <= 0) {
         // Channel socket closed.
         // TODO: Error close
@@ -382,7 +403,7 @@ int portforwarding_worker_start(PortForwardingWorker *worker)
     vlogD("Stream: %d portforwarding worker started %s.",
           worker->mux->base.stream->id, (rc == 0 ? "success" : "failed"));
 
-    return (rc != 0) ? ELA_SYS_ERROR(rc) : 0;
+    return (rc != 0) ? IOEX_SYS_ERROR(rc) : 0;
 }
 
 static
@@ -426,21 +447,21 @@ int portforwarding_open(PortForwardingWorker *worker, const char *service,
     pf = (PortForwarding *)rc_zalloc(sizeof(PortForwarding) + strlen(service) + 1,
                                      portforwarding_destroy);
     if (!pf)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     type = protocol == PortForwardingProtocol_TCP ? SOCK_STREAM : SOCK_DGRAM;
     pf->sock = socket_create(type, host, port);
 
     if (pf->sock == INVALID_SOCKET) {
         deref(pf);
-        return ELA_SYS_ERROR(socket_errno());
+        return IOEX_SYS_ERROR(socket_errno());
     }
 
     if (protocol == PortForwardingProtocol_TCP) {
         int rc = listen(pf->sock, 16);
         if (rc < 0) {
             deref(pf);
-            return ELA_SYS_ERROR(socket_errno());
+            return IOEX_SYS_ERROR(socket_errno());
         }
     }
 
@@ -449,7 +470,7 @@ int portforwarding_open(PortForwardingWorker *worker, const char *service,
         deref(pf);
         vlogE("Stream: %d multiplexer handler has too many portforwardings!",
               worker->mux->base.stream->id);
-        return ELA_GENERAL_ERROR(ELAERR_LIMIT_EXCEEDED);
+        return IOEX_GENERAL_ERROR(IOEXERR_LIMIT_EXCEEDED);
     }
 
     pf->id = id;
@@ -510,7 +531,7 @@ int portforwarding_worker_create(MultiplexHandler *handler,
     wk = (PortForwardingWorker *)rc_zalloc(sizeof(PortForwardingWorker),
                                            portforwarding_worker_destroy);
     if (!wk)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
 
     wk->mux = handler;
     wk->start = portforwarding_worker_start;
@@ -521,19 +542,19 @@ int portforwarding_worker_create(MultiplexHandler *handler,
     rc = fdset_init(&wk->fdset);
     if (rc != 0) {
         deref(wk);
-        return ELA_SYS_ERROR(rc);
+        return IOEX_SYS_ERROR(rc);
     }
 
     wk->portforwardings = portforwardings_create(8);
     if (!wk->portforwardings) {
         deref(wk);
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
     }
 
     rc = ids_heap_init((IdsHeap *)&wk->pf_ids, MAX_PORTFORWARDING_ID);
     if (rc < 0) {
         deref(wk);
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return IOEX_GENERAL_ERROR(IOEXERR_OUT_OF_MEMORY);
     }
 
     multiplex_handler_set_channel_callbacks(handler,
