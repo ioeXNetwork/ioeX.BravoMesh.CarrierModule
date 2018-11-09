@@ -2,6 +2,7 @@
 
 Thanks for the following projects:
 
+- **Elastos.NET.Carrier.Native.SDK** [github](https://github.com/elastos/Elastos.NET.Carrier.Native.SDK)
 - **c-toxcore** [github](https://github.com/TokTok/c-toxcore)
 - **coturn TURN server project** [github](https://github.com/coturn/coturn)
 - **CUnit - A Unit Testing Framework for C** [cunit.sourceforge.net](http://cunit.sourceforge.net)
