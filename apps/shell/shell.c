@@ -2163,6 +2163,13 @@ static void file_canceled_callback(IOEXCarrier *w, const char *fileid, const cha
     output("Friend[%s] has canceled file transmission [id:%s]\n", friendid, fileid);
 }
 
+static void file_aborted_callback(IOEXCarrier *w, const char *fileid, const char *friendid, const char *fullpath, 
+                                  size_t length, size_t filesize, void *context)
+{
+    output("File transimssion [%s] with the friend [%s] is aborted.\n", fileid, friendid);
+    output("Original file name [%s], transferred size %u, total %u.\n", fullpath, length, filesize);
+}
+
 static void file_completed_callback(IOEXCarrier *w, const char *fileid, const char *friendid, void *context)
 {
     output("File transmission [id:%s] with friend [%s] has completed\n", fileid, friendid);
@@ -2318,6 +2325,7 @@ int main(int argc, char *argv[])
     callbacks.file_paused = file_paused_callback;
     callbacks.file_resumed = file_resumed_callback;
     callbacks.file_canceled = file_canceled_callback;
+    callbacks.file_aborted = file_aborted_callback;
     callbacks.file_completed = file_completed_callback;
     //callbacks.file_progress = file_progress_callback;
 

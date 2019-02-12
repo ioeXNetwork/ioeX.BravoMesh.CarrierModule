@@ -2212,6 +2212,68 @@ void notify_file_canceled_cb(const uint32_t friend_number, const uint32_t file_n
 }
 
 static
+void notify_file_aborted_cb(uint32_t friend_number, uint32_t file_number, const uint8_t *_key, size_t length, void *context)
+{
+    IOEXCarrier *w = (IOEXCarrier *)context;
+    FriendInfo *fi;
+    uint8_t file_key[IOEX_MAX_FILE_KEY_LEN];
+    int rc;
+
+    assert(friend_number != UINT32_MAX);
+
+    fi = friends_get(w->friends, friend_number);
+    if (!fi) {
+        IOEX_set_error(IOEX_GENERAL_ERROR(IOEXERR_NOT_EXIST));
+        vlogE("Carrier: Unknown friend number %lu, file abort index %u dropped.", friend_number, file_number);
+        return;
+    }
+
+    // If file_key is NULL, try to get from friend_number and file_number
+    // This, however, should never happen
+    if(_key == NULL){
+        rc = dht_file_get_file_key(&w->dht, file_key, friend_number, file_number);
+        if(rc < 0){
+            IOEX_set_error(rc);
+            vlogE("Carrier: cannot get file id for friend_number:%u file_number:%u", friend_number, file_number);
+            return;
+        }
+    }
+    else{
+        memcpy(file_key, _key, IOEX_MAX_FILE_KEY_LEN);
+    }
+
+    FileTracker *tracker;
+    IOEXTrackerInfo info;
+    char fullpath[IOEX_MAX_FULL_PATH_LEN];
+    if(is_sender(file_number)){
+        tracker = find_file_sender(w, file_key);
+        if(tracker != NULL){
+            if(w->callbacks.file_aborted){
+                get_fullpath(tracker, fullpath);
+                memcpy(&info, &tracker->ti, sizeof(info));
+                w->callbacks.file_aborted(w, info.file_id, fi->info.user_info.userid,
+                        fullpath, length, info.file_size, w->context);
+            }
+            remove_file_sender(w, tracker);
+        }
+    }
+    else {
+        // Unlike canceled, we don't remove the partically received file when aborted,
+        // as we may plan to continue the transmission with the file later.
+        tracker = find_file_receiver(w, file_key);
+        if(tracker != NULL){
+            if(w->callbacks.file_aborted){
+                get_fullpath(tracker, fullpath);
+                memcpy(&info, &tracker->ti, sizeof(info));
+                w->callbacks.file_aborted(w, info.file_id, fi->info.user_info.userid,
+                        fullpath, length, info.file_size, w->context);
+            }
+            remove_file_receiver(w, tracker);
+        }
+    }
+}
+
+static
 void notify_file_chunk_request_cb(const uint32_t friend_number, const uint32_t file_number, const uint64_t position,
                                   const size_t length, void *context)
 {
@@ -2403,6 +2465,7 @@ int IOEX_run(IOEXCarrier *w, int interval)
     w->dht_callbacks.notify_file_paused = notify_file_paused_cb;
     w->dht_callbacks.notify_file_resumed = notify_file_resumed_cb;
     w->dht_callbacks.notify_file_canceled = notify_file_canceled_cb;
+    w->dht_callbacks.notify_file_aborted = notify_file_aborted_cb;
     w->dht_callbacks.notify_file_chunk_request = notify_file_chunk_request_cb;
     w->dht_callbacks.notify_file_chunk_receive = notify_file_chunk_receive_cb;
 

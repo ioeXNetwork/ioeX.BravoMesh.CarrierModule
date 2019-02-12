@@ -692,6 +692,14 @@ void notify_file_chunk_receive_cb(Tox *tox, uint32_t friend_number, uint32_t fil
 }
 
 static
+void notify_file_abort_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, const uint8_t *filekey,
+                          size_t length, void *context)
+{
+    DHTCallbacks *cbs = (DHTCallbacks *)context;
+    cbs->notify_file_aborted(friend_number, file_number, filekey, length, cbs->context);
+}
+
+static
 void log_cb(Tox *tox, TOX_LOG_LEVEL level, const char *file, uint32_t line,
             const char *func, const char *message, void *user_data)
 {
@@ -767,6 +775,7 @@ int dht_new(const uint8_t *savedata, size_t datalen, bool udp_enabled, DHT *dht)
     tox_callback_file_recv_control(tox, notify_file_control_cb);
     tox_callback_file_chunk_request(tox, notify_file_chunk_request_cb);
     tox_callback_file_recv_chunk(tox, notify_file_chunk_receive_cb);
+    tox_callback_file_abort(tox, notify_file_abort_cb);
 
     dht->tox = tox;
 
