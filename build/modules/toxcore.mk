@@ -1,8 +1,8 @@
 include environ/$(HOST)-$(ARCH).mk
 
-PACKAGE_NAME   = c-toxcore-0.1.10.tar.gz
-PACKAGE_URL    = https://github.com/TokTok/c-toxcore/releases/download/v0.1.10/$(PACKAGE_NAME)
-SRC_DIR        = $(DEPS_DIR)/c-toxcore-0.1.10
+PACKAGE_NAME   = v0.6.0.tar.gz
+PACKAGE_URL    = https://github.com/ioeXNetwork/ioeX.c-toxcore/archive/$(PACKAGE_NAME)
+SRC_DIR        = $(DEPS_DIR)/ioeX.c-toxcore-0.6.0
 
 CONFIG_COMMAND = $(shell scripts/toxcore.sh "command" $(HOST) $(ARCH) $(HOST_COMPILER))
 CONFIG_OPTIONS = --prefix=$(DIST_DIR) \
@@ -16,7 +16,6 @@ CONFIG_OPTIONS = --prefix=$(DIST_DIR) \
         --disable-av
 
 define configure
-    $(BUILD_DIR)/patch/toxcore.sh $(SRC_DIR)
     if [ ! -e $(SRC_DIR)/configure ]; then \
         cd $(SRC_DIR) && ./autogen.sh; \
     fi

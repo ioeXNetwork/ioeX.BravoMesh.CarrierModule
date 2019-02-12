@@ -1,0 +1,41 @@
+image: git.pin2wall.com:4567/p2pnetwork/ioex.bravomesh.carriermodule/ioex_carrier_base:v1.1.0
+stages:
+  - build
+
+# -------------------------------------------
+# Stage: build
+# -------------------------------------------
+
+build_master:
+  stage: build
+  only:
+    - master
+  script:
+    - cd build && ./linux_build.sh
+
+build_android_master:
+  stage: build
+  only:
+    - master
+  script:
+    - cd build && ./android_build.sh arm
+
+build_develop:
+  stage: build
+  only:
+    - develop
+  script: 
+    - touch build/environ/gitlab.mk
+    - echo GITLAB_USERNAME = $TOXCORE_DEPLOY_TOKEN >> build/environ/gitlab.mk
+    - echo GITLAB_PASSWORD = $TOXCORE_DEPLOY_PASSWORD >> build/environ/gitlab.mk
+    - cd build && ./linux_build.sh
+
+build_android_develop:
+  stage: build
+  only:
+    - develop
+  script: 
+    - touch build/environ/gitlab.mk
+    - echo GITLAB_USERNAME = $TOXCORE_DEPLOY_TOKEN >> build/environ/gitlab.mk
+    - echo GITLAB_PASSWORD = $TOXCORE_DEPLOY_PASSWORD >> build/environ/gitlab.mk
+    - cd build && ./android_build.sh arm

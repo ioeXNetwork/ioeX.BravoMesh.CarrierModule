@@ -19,9 +19,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
+
 /*
- * Copyright (c) 2018 ioeXNetwork
+ * Copyright (c) 2019 ioeXNetwork
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -349,6 +349,60 @@ static inline int __dht_friend_delete_error(TOX_ERR_FRIEND_DELETE code)
     return rc;
 }
 
+static inline int __dht_file_query_error(TOX_ERR_FILE_QUERY code)
+{
+    int rc;
+    switch (code){
+    case TOX_ERR_FILE_QUERY_OK:
+        rc = IOEXSUCCESS;
+        break;
+
+    case TOX_ERR_FILE_QUERY_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+
+    case TOX_ERR_FILE_QUERY_FRIEND_NOT_CONNECTED:
+        rc = IOEX_DHT_ERROR(IOEXERR_FRIEND_OFFLINE);
+        break;
+
+    case TOX_ERR_FILE_QUERY_SENDQ:
+        rc = IOEX_DHT_ERROR(IOEXERR_LIMIT_EXCEEDED);
+        break;
+
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
+static inline int __dht_file_get_error(TOX_ERR_FILE_GET code)
+{
+    int rc;
+    switch (code){
+    case TOX_ERR_FILE_GET_OK:
+        rc = IOEXSUCCESS;
+        break;
+
+    case TOX_ERR_FILE_GET_FRIEND_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_NOT_EXIST);
+        break;
+
+    case TOX_ERR_FILE_GET_NULL:
+        rc = IOEX_DHT_ERROR(IOEXERR_INVALID_ARGS);
+        break;
+
+    case TOX_ERR_FILE_GET_NOT_FOUND:
+        rc = IOEX_DHT_ERROR(IOEXERR_FILE_TRACKER_INVALID);
+        break;
+
+    default:
+        rc = IOEX_DHT_ERROR(IOEXERR_UNKNOWN);
+    }
+
+    return rc;
+}
+
 static inline int __dht_file_send_error(TOX_ERR_FILE_SEND code)
 {
     int rc;
@@ -550,39 +604,78 @@ void notify_friend_message_cb(Tox *tox, uint32_t friend_number,
     cbs->notify_friend_message(friend_number, message, length, cbs->context);
 }
 
-static 
+static
 void notify_file_request_cb(Tox *tox, uint32_t friend_number, uint32_t real_filenumber, uint32_t kind, uint64_t file_size,
                             const uint8_t *filename, size_t filename_length, void *context)
 {
     DHTCallbacks *cbs = (DHTCallbacks *)context;
-    cbs->notify_file_request(friend_number, real_filenumber, filename, file_size, cbs->context);
+    TOX_ERR_FILE_GET error;
+    uint8_t file_id[TOX_FILE_ID_LENGTH];
+
+    if(!tox_file_get_file_id(tox, friend_number, real_filenumber, file_id, &error)){
+        vlogE("Received unknown file request: friend_number=%u file_number=%u filename=%s (0x%08x)", friend_number, real_filenumber, filename,
+                __dht_file_get_error(error));
+        return;
+    }
+
+    cbs->notify_file_request(file_id, friend_number, real_filenumber, filename, file_size, cbs->context);
 }
 
-static 
+static
+void notify_file_query_cb(Tox *tox, uint32_t friend_number, const char *filename, const char *message, void *context)
+{
+    DHTCallbacks *cbs = (DHTCallbacks *)context;
+    cbs->notify_file_query(friend_number, filename, message, cbs->context);
+}
+
+static
 void notify_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
                             void *context)
 {
     DHTCallbacks *cbs = (DHTCallbacks *)context;
-    // TODO: add other control callbacks. Also have a better way to determine it is start or resume
+    TOX_ERR_FILE_GET error;
+    int receive_send;
+    uint64_t size, transferred;
+    uint8_t status, pause;
+
+    if(file_number > 65535){
+        receive_send = 0;
+    }
+    else{
+        receive_send = 1;
+    }
+
+    if(!tox_file_get_transfer_status(tox, receive_send, friend_number, file_number, &size, &transferred, &status, &pause, &error)){
+        vlogE("Failed to find file transfer for friend[%u] file[%u] (0x%08x)", friend_number, file_number, __dht_file_get_error(error));
+        return;
+    }
 
     switch(control){
         case TOX_FILE_CONTROL_PAUSE:
             cbs->notify_file_paused(friend_number, file_number, cbs->context);
             break;
         case TOX_FILE_CONTROL_RESUME:
-            cbs->notify_file_resumed(friend_number, file_number, cbs->context);
-            cbs->notify_file_accepted(friend_number, file_number, cbs->context);
+            if(transferred == 0){
+                cbs->notify_file_accepted(friend_number, file_number, cbs->context);
+            }
+            else{
+                cbs->notify_file_resumed(friend_number, file_number, cbs->context);
+            }
             break;
         case TOX_FILE_CONTROL_CANCEL:
-            cbs->notify_file_canceled(friend_number, file_number, cbs->context);
-            cbs->notify_file_rejected(friend_number, file_number, cbs->context);
+            if(status == IOEXFileTransmissionStatus_Pending){
+                cbs->notify_file_rejected(friend_number, file_number, cbs->context);
+            }
+            else{
+                cbs->notify_file_canceled(friend_number, file_number, cbs->context);
+            }
             break;
         default:
             vlogE("Received unknown file control:%d from friend[%u] for file[%u]", control, friend_number, file_number);
     }
 }
 
-static 
+static
 void notify_file_chunk_request_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
                                   size_t length, void *context)
 {
@@ -670,6 +763,7 @@ int dht_new(const uint8_t *savedata, size_t datalen, bool udp_enabled, DHT *dht)
     tox_callback_friend_message(tox, notify_friend_message_cb);
 
     tox_callback_file_recv(tox, notify_file_request_cb);
+    tox_callback_file_recv_query(tox, notify_file_query_cb);
     tox_callback_file_recv_control(tox, notify_file_control_cb);
     tox_callback_file_chunk_request(tox, notify_file_chunk_request_cb);
     tox_callback_file_recv_chunk(tox, notify_file_chunk_receive_cb);
@@ -1069,7 +1163,41 @@ int dht_get_random_tcp_relay(DHT *dht, char *tcp_relay, size_t buflen,
     return 0;
 }
 
-int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath, uint32_t *filenum)
+int dht_file_get_file_key(DHT *dht, uint8_t *file_key, uint32_t friend_number, uint32_t filenum)
+{
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_GET error;
+    if(!tox_file_get_file_id(tox, friend_number, filenum, file_key, &error)){
+        return __dht_file_get_error(error);
+    }
+    return IOEXSUCCESS;
+}
+
+int dht_file_get_transfer_status(DHT *dht, const uint8_t receive_send, const int32_t friendnumber, const uint8_t filenumber,
+        uint64_t *size, uint64_t *transferred, uint8_t *status, uint8_t *pause)
+{
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_GET error;
+    if(!tox_file_get_transfer_status(tox, receive_send, friendnumber, filenumber, size, transferred, status, pause, &error)){
+        return __dht_file_get_error(error);
+    }
+
+    return IOEXSUCCESS;
+}
+
+int dht_file_send_query(DHT *dht, uint32_t friend_number, const char *filename, const char *message)
+{
+    Tox *tox = dht->tox;
+    TOX_ERR_FILE_QUERY error;
+
+    if(!tox_file_query(tox, friend_number, filename, message, &error)){
+        return __dht_file_query_error(error);
+    }
+
+    return IOEXSUCCESS;
+}
+
+int dht_file_send_request(DHT *dht, uint8_t *file_id, uint32_t friend_number, const char *fullpath, uint32_t *filenum)
 {
     Tox *tox = dht->tox;
     char filename[IOEX_MAX_FILE_NAME_LEN + 1];
@@ -1093,7 +1221,7 @@ int dht_file_send_request(DHT *dht, uint32_t friend_number, const char *fullpath
         strncpy(filename, pch+1, sizeof(filename));
     }
 
-    *filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename, 
+    *filenum = tox_file_send(tox, friend_number, TOX_FILE_KIND_DATA, filesize, file_id, (uint8_t *)filename,
                              strlen(filename), &error);
     if(*filenum != UINT32_MAX) {
         vlogI("Sent file send request.");
@@ -1132,7 +1260,7 @@ int dht_file_send_seek(DHT *dht, uint32_t friend_number, const uint32_t file_num
     if(rc) {
         vlogI("Sent seek request.");
     }
-    else { 
+    else {
         vlogE("Send file seek error: %i", error);
     }
 

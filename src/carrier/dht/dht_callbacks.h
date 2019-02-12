@@ -19,9 +19,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
+
 /*
- * Copyright (c) 2018 ioeXNetwork
+ * Copyright (c) 2019 ioeXNetwork
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -71,29 +71,32 @@ struct DHTCallbacks {
     void (*notify_friend_message)(uint32_t friend_number, const uint8_t *message,
                                   size_t length, void *context);
 
-    void (*notify_file_request)(uint32_t friend_number, uint32_t file_number, 
-                                const uint8_t *filename, uint64_t filesize, 
+    void (*notify_file_query)(uint32_t friend_number, const char *filename, const char *message,
+                              void *context);
+
+    void (*notify_file_request)(const uint8_t *file_id, uint32_t friend_number, uint32_t file_number,
+                                const uint8_t *filename, uint64_t filesize,
                                 void *context);
 
-    void (*notify_file_accepted)(uint32_t friend_number, uint32_t file_number, 
+    void (*notify_file_accepted)(uint32_t friend_number, uint32_t file_number,
                                  void *context);
 
-    void (*notify_file_rejected)(uint32_t friend_number, uint32_t file_number, 
+    void (*notify_file_rejected)(uint32_t friend_number, uint32_t file_number,
                                  void *context);
 
-    void (*notify_file_paused)(uint32_t friend_number, uint32_t file_number, 
+    void (*notify_file_paused)(uint32_t friend_number, uint32_t file_number,
                                void *context);
 
-    void (*notify_file_resumed)(uint32_t friend_number, uint32_t file_number, 
+    void (*notify_file_resumed)(uint32_t friend_number, uint32_t file_number,
                                 void *context);
 
-    void (*notify_file_canceled)(uint32_t friend_number, uint32_t file_number, 
+    void (*notify_file_canceled)(uint32_t friend_number, uint32_t file_number,
                                  void *context);
 
     void (*notify_file_chunk_request)(uint32_t friend_number, uint32_t file_number, uint64_t position,
                                       size_t length, void *context);
 
-    void (*notify_file_chunk_receive)(uint32_t friend_number, uint32_t file_number, uint64_t position, 
+    void (*notify_file_chunk_receive)(uint32_t friend_number, uint32_t file_number, uint64_t position,
                                       const uint8_t *data, size_t length, void *context);
 };
 
