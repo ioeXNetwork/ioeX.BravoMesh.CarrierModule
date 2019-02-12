@@ -5,6 +5,7 @@ INSTALL_STATUS := $(SRC_DIR)/.install_status
 
 define def-source-fetch
     ./scripts/source.sh $(PACKAGE_URL) $(PACKAGE_NAME) $(REPO_DIR) $(DEPS_DIR)
+    ./scripts/gitlab_source.sh $(GITLAB_PACKAGE_URL) $(GITLAB_PACKAGE_NAME) $(GITLAB_PACKAGE_BRANCH) $(DEPS_DIR)
 endef
 
 define def-configure

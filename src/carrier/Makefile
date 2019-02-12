@@ -13,7 +13,8 @@ INSTALL_BINARY_PATH  = $(DESTDIR)$(PREFIX)/$(BINARY_PATH)
 INSTALL ?= cp -a
 FLATCC  ?= flatcc
 
-CFLAGS := $(CFLAGS) -DCARRIER_BUILD -DIOEX_BUILD -I. -I../common -Idht -I$(INSTALL_INCLUDE_PATH) -fvisibility=hidden -fPIC -Wall  -Wstrict-prototypes -Wwrite-strings
+IOEX_CFLAGS := -DCARRIER_BUILD -DIOEX_BUILD -DIOEX_CARRIER_VERSION=\"$(IOEX_CARRIER_VERSION)\" -DIOEX_CARRIER_LAST_COMMIT=\"$(IOEX_CARRIER_LAST_COMMIT)\" -DIOEX_CARRIER_BUILD_TIME=\"$(IOEX_CARRIER_BUILD_TIME)\"
+CFLAGS := $(CFLAGS) $(IOEX_CFLAGS) -I. -I../common -Idht -I$(INSTALL_INCLUDE_PATH) -fvisibility=hidden -fPIC -Wall  -Wstrict-prototypes -Wwrite-strings
 LDFLAGS := $(LDFLAGS) -fvisibility=hidden
 LIBS   := -lIOEXcommon -ltoxcore -lsodium -lm -lflatccrt
 
