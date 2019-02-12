@@ -1659,22 +1659,6 @@ static void file_send_seek(IOEXCarrier *w, int argc, char *argv[])
     }
 }
 
-static void file_send_seek(IOEXCarrier *w, int argc, char *argv[])
-{
-    int rc;
-    if(argc != 4){
-        output("Invalid command syntax.\n");
-        return;
-    }
-    rc = IOEX_send_file_seek(w, argv[1], argv[2], argv[3]);
-    if(rc < 0){
-        output("Invalid request.(0x%8X)\n", IOEX_get_error());
-    }
-    else{
-        output("Sent file seek request.\n");
-    }
-}
-
 static void file_send_accept(IOEXCarrier *w, int argc, char *argv[])
 {
     int rc;

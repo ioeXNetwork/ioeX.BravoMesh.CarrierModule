@@ -25,15 +25,7 @@ $ cd /tmp/flatcc-0.5.0/build/install && sudo make install
 
 #### 2. Build
 
-Change to `$(SRC_ROOT)/build` directory, and create a file containing your pin2wall gitlab account:
-
-```shell
-$ touch environ/gitlab.mk
-$ echo 'GITLAB_USERNAME = <your username>' >> environ/gitlab.mk
-$ echo 'GITLAB_PASSWORD = <your password>' >> environ/gitlab.mk
-```
-
-Then run:
+Change to `$(SRC_ROOT)/build` directory, and run:
 
 ```shell
 $ ./linux_build.sh
@@ -79,15 +71,7 @@ And run resulting command.
 
 #### 2. Build
 
-Change to `$(SRC_ROOT)/build` directory, and create a file containing your pin2wall gitlab account:
-
-```shell
-$ touch environ/gitlab.mk
-$ echo 'GITLAB_USERNAME = <your username>' >> environ/gitlab.mk
-$ echo 'GITLAB_PASSWORD = <your password>' >> environ/gitlab.mk
-```
-
-Then run:
+Change to `$(SRC_ROOT)/build` directory, and run:
 
 ```shell
 $ ./darwin_build.sh
@@ -121,9 +105,6 @@ $ docker run -tiv $(SRC_ROOT):/home/IOEX/Projects --tmpfs=/tmp IOEX-dev /bin/bas
 
 ```shell
 $ cd ~/Projects/build
-$ touch environ/gitlab.mk
-$ echo 'GITLAB_USERNAME = <your username>' >> environ/gitlab.mk
-$ echo 'GITLAB_PASSWORD = <your password>' >> environ/gitlab.mk
 $ ./linux_build.sh
 ```
 

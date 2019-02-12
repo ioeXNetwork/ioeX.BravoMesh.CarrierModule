@@ -1,10 +1,8 @@
 include environ/$(HOST)-$(ARCH).mk
-include environ/gitlab.mk
 
-GITLAB_PACKAGE_NAME   = c-toxcore
-GITLAB_PACKAGE_URL    = http://$(GITLAB_USERNAME):$(GITLAB_PASSWORD)@git.pin2wall.com/P2PNetwork/$(GITLAB_PACKAGE_NAME).git
-GITLAB_PACKAGE_BRANCH = v0.5.0
-SRC_DIR        = $(DEPS_DIR)/$(GITLAB_PACKAGE_NAME)
+PACKAGE_NAME   = v0.6.0.tar.gz
+PACKAGE_URL    = https://github.com/ioeXNetwork/ioeX.c-toxcore/archive/$(PACKAGE_NAME)
+SRC_DIR        = $(DEPS_DIR)/ioeX.c-toxcore-0.6.0
 
 CONFIG_COMMAND = $(shell scripts/toxcore.sh "command" $(HOST) $(ARCH) $(HOST_COMPILER))
 CONFIG_OPTIONS = --prefix=$(DIST_DIR) \
